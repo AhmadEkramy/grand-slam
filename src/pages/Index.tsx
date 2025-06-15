@@ -19,6 +19,9 @@ const Index = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const { addBooking, loading, getAvailableSlots } = useBookings();
   const { user } = useAuth();
+  const [selectedCourt, setSelectedCourt] = useState<1 | 2 | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   const handleBookingSubmit = async (bookingData: any) => {
     try {
@@ -37,6 +40,13 @@ const Index = () => {
     }
   };
 
+  const handleBookSlot = (court: 1 | 2, time: string, date: string) => {
+    setSelectedCourt(court);
+    setSelectedTime(time);
+    setSelectedDate(date);
+    setShowBookingModal(true);
+  };
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'admin':
@@ -51,7 +61,7 @@ const Index = () => {
               <HeroSection onBookNowClick={() => setShowBookingModal(true)} />
             </div>
             <div id="courtAvailability">
-              <CourtAvailability onBookSlot={() => setShowBookingModal(true)} />
+              <CourtAvailability onBookSlot={handleBookSlot} />
             </div>
             <div id="ourPackages">
               <OurPackages />
@@ -87,6 +97,9 @@ const Index = () => {
             onSubmit={handleBookingSubmit}
             loading={loading}
             getAvailableSlots={getAvailableSlots}
+            selectedCourt={selectedCourt}
+            selectedTime={selectedTime}
+            selectedDate={selectedDate}
           />
         )}
 

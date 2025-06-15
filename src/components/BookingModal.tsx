@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
 import { RESERVATION_TYPES, TIME_SLOTS } from '../types';
@@ -9,9 +9,12 @@ interface BookingModalProps {
   onSubmit: (bookingData: any) => void;
   loading: boolean;
   getAvailableSlots: (date: string) => { time: string; available: boolean; court: 1 | 2 }[];
+  selectedCourt?: 1 | 2 | null;
+  selectedTime?: string;
+  selectedDate?: string;
 }
 
-const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, loading, getAvailableSlots }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, loading, getAvailableSlots, selectedCourt, selectedTime, selectedDate }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   
@@ -24,10 +27,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
   const [formData, setFormData] = useState({
     fullName: '',
     phoneNumber: '',
-    court: 1 as 1 | 2,
+    court: selectedCourt || 1,
     reservationType: '1hour' as keyof typeof RESERVATION_TYPES,
-    startTime: '',
-    date: todayString
+    startTime: selectedTime || '',
+    date: selectedDate || todayString
   });
 
   // Get available slots for the selected date
@@ -67,6 +70,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
 
     onSubmit(bookingData);
   };
+
+  useEffect(() => {
+    setFormData(f => ({
+      ...f,
+      court: selectedCourt || 1,
+      startTime: selectedTime || '',
+      date: selectedDate || todayString
+    }));
+  }, [selectedCourt, selectedTime, selectedDate, isOpen]);
 
   if (!isOpen) return null;
 
