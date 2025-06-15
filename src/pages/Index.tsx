@@ -17,7 +17,7 @@ import OurPackages from '../components/OurPackages';
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const { addBooking, loading } = useBookings();
+  const { addBooking, loading, getAvailableSlots } = useBookings();
   const { user } = useAuth();
 
   const handleBookingSubmit = async (bookingData: any) => {
@@ -86,6 +86,7 @@ const Index = () => {
             onClose={() => setShowBookingModal(false)}
             onSubmit={handleBookingSubmit}
             loading={loading}
+            getAvailableSlots={getAvailableSlots}
           />
         )}
 

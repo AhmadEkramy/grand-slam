@@ -8,9 +8,10 @@ interface BookingModalProps {
   onClose: () => void;
   onSubmit: (bookingData: any) => void;
   loading: boolean;
+  getAvailableSlots: (date: string) => { time: string; available: boolean; court: 1 | 2 }[];
 }
 
-const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, loading }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, loading, getAvailableSlots }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   
@@ -28,6 +29,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
     startTime: '',
     date: todayString
   });
+
+  // Get available slots for the selected date
+  const availableSlots = getAvailableSlots(formData.date).filter(slot => slot.court === formData.court && slot.available);
+  const availableTimes = availableSlots.map(slot => slot.time);
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
@@ -117,7 +122,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
                 type="date"
                 required
                 value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                onChange={(e) => setFormData({...formData, date: e.target.value, startTime: ''})}
                 className="form-control"
                 min={todayString}
               />
@@ -129,7 +134,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
               </label>
               <select
                 value={formData.court}
-                onChange={(e) => setFormData({...formData, court: parseInt(e.target.value) as 1 | 2})}
+                onChange={(e) => setFormData({...formData, court: parseInt(e.target.value) as 1 | 2, startTime: ''})}
                 className="form-control"
               >
                 <option value={1}>{t('court', 'Court')} 1</option>
@@ -158,17 +163,23 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
               <label className="block text-gray-700 mb-2">
                 {t('startTime', 'Start Time')}
               </label>
-              <select
-                required
-                value={formData.startTime}
-                onChange={(e) => setFormData({...formData, startTime: e.target.value})}
-                className="form-control"
-              >
-                <option value="">Select time</option>
-                {TIME_SLOTS.map(slot => (
-                  <option key={slot} value={slot}>{slot}</option>
-                ))}
-              </select>
+              <div>
+                <div className="font-semibold text-primary mb-2">Available Times</div>
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                  {TIME_SLOTS.filter(slot => availableTimes.includes(slot)).map(slot => (
+                    <button
+                      type="button"
+                      key={slot}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all
+                        ${formData.startTime === slot ? 'bg-[#00c896] text-white' : 'bg-gray-100 text-gray-800 hover:bg-[#2196c3] hover:text-white'}
+                      `}
+                      onClick={() => setFormData({...formData, startTime: slot})}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="pt-4">
