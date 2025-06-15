@@ -1,0 +1,818 @@
+import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useBookings } from '../hooks/useBookings';
+import { useChampionships } from '../hooks/useChampionships';
+import { useProducts } from '../hooks/useProducts';
+import { useAdvertisements } from '../hooks/useAdvertisements';
+import { useAuth } from '../hooks/useAuth';
+import { Calendar, BarChart3, Trophy, Package, Megaphone, Filter, Search, Plus, User, Trash2, Check, X, Edit, Home, LogOut, DollarSign } from 'lucide-react';
+import { Button } from './ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import AddChampionshipForm from './AddChampionshipForm';
+import AddProductForm from './AddProductForm';
+import AddAdvertisementForm from './AddAdvertisementForm';
+import EditChampionshipForm from './EditChampionshipForm';
+import EditProductForm from './EditProductForm';
+import EditAdvertisementForm from './EditAdvertisementForm';
+import { Championship, Product, Advertisement } from '../types';
+
+interface AdminDashboardProps {
+  onNavigateHome: () => void;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
+  const { t } = useLanguage();
+  const { logout } = useAuth();
+  const { bookings, updateBooking, deleteBooking, loading } = useBookings();
+  const { championships, deleteChampionship, loading: championshipsLoading } = useChampionships();
+  const { products, deleteProduct, loading: productsLoading } = useProducts();
+  const { advertisements, deleteAdvertisement, loading: advertisementsLoading } = useAdvertisements();
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [courtFilter, setCourtFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
+  
+  // Modal states
+  const [showAddChampionship, setShowAddChampionship] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAddAdvertisement, setShowAddAdvertisement] = useState(false);
+  
+  // Edit modal states
+  const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingAdvertisement, setEditingAdvertisement] = useState<Advertisement | null>(null);
+
+  const handleStatusChange = async (bookingId: string, status: 'approved' | 'canceled') => {
+    await updateBooking(bookingId, { status });
+  };
+
+  const totalIncome = bookings
+    .filter(booking => booking.status === 'approved')
+    .reduce((sum, booking) => sum + booking.price, 0);
+
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date();
+  const todayString = today.getFullYear() + '-' + 
+    String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(today.getDate()).padStart(2, '0');
+
+  console.log('Today string:', todayString);
+  console.log('All bookings:', bookings.map(b => ({ date: b.date, status: b.status, price: b.price })));
+
+  const todayIncome = bookings
+    .filter(booking => {
+      console.log('Checking booking:', booking.date, 'against today:', todayString, 'status:', booking.status);
+      return booking.status === 'approved' && booking.date === todayString;
+    })
+    .reduce((sum, booking) => sum + booking.price, 0);
+
+  console.log('Today income:', todayIncome);
+
+  const thisWeekIncome = bookings
+    .filter(booking => {
+      if (booking.status !== 'approved') return false;
+      
+      const bookingDate = new Date(booking.date + 'T00:00:00');
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      weekAgo.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+      
+      console.log('Week check - Booking date:', booking.date, 'Booking Date obj:', bookingDate, 'Week ago:', weekAgo, 'Today end:', todayEnd);
+      
+      return bookingDate >= weekAgo && bookingDate <= todayEnd;
+    })
+    .reduce((sum, booking) => sum + booking.price, 0);
+
+  console.log('This week income:', thisWeekIncome);
+
+  const thisMonthIncome = bookings
+    .filter(booking => {
+      if (booking.status !== 'approved') return false;
+      
+      const bookingDate = new Date(booking.date + 'T00:00:00');
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+      
+      console.log('Month check - Booking date:', booking.date, 'Booking Date obj:', bookingDate, 'Month start:', monthStart, 'Today end:', todayEnd);
+      
+      return bookingDate >= monthStart && bookingDate <= todayEnd;
+    })
+    .reduce((sum, booking) => sum + booking.price, 0);
+
+  console.log('This month income:', thisMonthIncome);
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         booking.phoneNumber?.includes(searchTerm);
+    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+    const matchesCourt = courtFilter === 'all' || booking.court.toString() === courtFilter;
+    const matchesDate = !dateFilter || booking.date === dateFilter;
+    
+    return matchesSearch && matchesStatus && matchesCourt && matchesDate;
+  });
+
+  // Calculate total price of filtered bookings
+  const filteredBookingsTotal = filteredBookings.reduce((sum, booking) => sum + booking.price, 0);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      onNavigateHome();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const ReservationsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <Filter className="w-5 h-5 text-primary" />
+        <h3 className="text-lg font-semibold text-primary">Reservation Dashboard</h3>
+      </div>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Date</label>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Court</label>
+          <select
+            value={courtFilter}
+            onChange={(e) => setCourtFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="all">All Courts</option>
+            <option value="1">Court 1</option>
+            <option value="2">Court 2</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="canceled">Canceled</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Search by Name</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Enter user name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Total Price Summary */}
+      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-cyan-500">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-cyan-500 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">Total Reservations Value</h4>
+              <p className="text-sm text-gray-600">
+                {filteredBookings.length} reservation{filteredBookings.length !== 1 ? 's' : ''} found
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-cyan-600">{filteredBookingsTotal} EGP</p>
+            <p className="text-sm text-gray-500">Based on current filters</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bookings Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-50">
+              <TableHead className="font-medium">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  User Details
+                </div>
+              </TableHead>
+              <TableHead>Court</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredBookings.map(booking => (
+              <TableRow key={booking.id} className="hover:bg-gray-50">
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{booking.fullName}</div>
+                    <div className="text-sm text-gray-500">{booking.phoneNumber}</div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-center w-8 h-8 bg-cyan-500 text-white rounded-full text-sm font-medium">
+                    {booking.court}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{booking.date}</div>
+                    <div className="text-sm text-gray-500">{booking.startTime} - {booking.endTime}</div>
+                  </div>
+                </TableCell>
+                <TableCell>{booking.reservationType}</TableCell>
+                <TableCell className="font-medium text-green-600">
+                  {booking.price} {t('egp', 'EGP')}
+                </TableCell>
+                <TableCell>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    booking.status === 'approved' ? 'bg-green-100 text-green-700' :
+                    booking.status === 'canceled' ? 'bg-red-100 text-red-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    {booking.status === 'pending' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleStatusChange(booking.id, 'approved')}
+                          disabled={loading}
+                          className="bg-green-500 hover:bg-green-600 text-white"
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleStatusChange(booking.id, 'canceled')}
+                          disabled={loading}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteBooking(booking.id)}
+                      disabled={loading}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+
+  const AnalyticsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="w-5 h-5 text-primary" />
+        <h3 className="text-lg font-semibold text-primary">Income Analytics</h3>
+      </div>
+
+      {/* Income Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Today's Income</p>
+              <p className="text-2xl font-bold text-green-600">{todayIncome} EGP</p>
+            </div>
+            <div className="text-green-500 text-2xl">💵</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">This Week</p>
+              <p className="text-2xl font-bold text-blue-600">{thisWeekIncome} EGP</p>
+            </div>
+            <div className="text-blue-500 text-2xl">📅</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">This Month</p>
+              <p className="text-2xl font-bold text-purple-600">{thisMonthIncome} EGP</p>
+            </div>
+            <div className="text-purple-500 text-2xl">📈</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Revenue</p>
+              <p className="text-2xl font-bold text-orange-600">{totalIncome} EGP</p>
+            </div>
+            <div className="text-orange-500 text-2xl">🎯</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold mb-2">Total Bookings</h4>
+          <p className="text-3xl font-bold text-primary">{bookings.length}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold mb-2">Active Championships</h4>
+          <p className="text-3xl font-bold text-purple-600">{championships.length}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold mb-2">Available Products</h4>
+          <p className="text-3xl font-bold text-blue-600">{products.length}</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ChampionshipsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-primary">Championship Manager</h3>
+        </div>
+        <Button 
+          className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          onClick={() => setShowAddChampionship(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Championship
+        </Button>
+      </div>
+
+      {championships.length === 0 ? (
+        <div className="bg-cyan-50 p-12 rounded-lg text-center">
+          <div className="w-16 h-16 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Championships Yet</h3>
+          <p className="text-gray-600 mb-4">Create your first championship to get started!</p>
+          <Button 
+            className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+            onClick={() => setShowAddChampionship(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Championship
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead>Title</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Registration</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {championships.map(championship => (
+                <TableRow key={championship.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{championship.title}</div>
+                      <div className="text-sm text-gray-500">{championship.description}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{championship.date}</TableCell>
+                  <TableCell>{championship.time}</TableCell>
+                  <TableCell>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      championship.registrationEnabled 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {championship.registrationEnabled ? 'Open' : 'Closed'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setEditingChampionship(championship)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteChampionship(championship.id)}
+                        disabled={championshipsLoading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+
+  const ProductsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Package className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-primary">Product Manager</h3>
+        </div>
+        <Button 
+          className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          onClick={() => setShowAddProduct(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Product
+        </Button>
+      </div>
+
+      {products.length === 0 ? (
+        <div className="bg-cyan-50 p-12 rounded-lg text-center">
+          <div className="w-16 h-16 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Package className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Yet</h3>
+          <p className="text-gray-600 mb-4">Add your first product to get started!</p>
+          <Button 
+            className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+            onClick={() => setShowAddProduct(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead>Product</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map(product => (
+                <TableRow key={product.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                      <div className="font-medium">{product.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium text-green-600">
+                    {product.price} EGP
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-gray-500 max-w-xs truncate">
+                      {product.description}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setEditingProduct(product)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteProduct(product.id)}
+                        disabled={productsLoading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+
+  const AdvertisementsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Megaphone className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-primary">Advertisement Manager</h3>
+        </div>
+        <Button 
+          className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          onClick={() => setShowAddAdvertisement(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Advertisement
+        </Button>
+      </div>
+
+      {advertisements.length === 0 ? (
+        <div className="bg-cyan-50 p-12 rounded-lg text-center">
+          <div className="w-16 h-16 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Megaphone className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Advertisements Yet</h3>
+          <p className="text-gray-600 mb-4">Create your first advertisement to get started!</p>
+          <Button 
+            className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+            onClick={() => setShowAddAdvertisement(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Advertisement
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead>Advertisement</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Link</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {advertisements.map(advertisement => (
+                <TableRow key={advertisement.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <img
+                      src={advertisement.image}
+                      alt={advertisement.title || 'Advertisement'}
+                      className="w-16 h-12 object-cover rounded-lg"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{advertisement.title || 'Untitled'}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-gray-500 max-w-xs truncate">
+                      {advertisement.description || 'No description'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {advertisement.link && (
+                      <a
+                        href={advertisement.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        View Link
+                      </a>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setEditingAdvertisement(advertisement)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteAdvertisement(advertisement.id)}
+                        disabled={advertisementsLoading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header with Navigation */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-primary">Admin Panel</h1>
+                <p className="text-gray-600">Manage your padel court business efficiently</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={onNavigateHome}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Back to Home
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="reservations" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm rounded-lg p-2 h-auto">
+            <TabsTrigger 
+              value="reservations" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="font-medium">Reservations</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="font-medium">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="championships" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="font-medium">Championships</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="products" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <Package className="w-4 h-4" />
+              <span className="font-medium">Products</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="advertisements" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <Megaphone className="w-4 h-4" />
+              <span className="font-medium">Advertisements</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reservations">
+            <ReservationsTab />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsTab />
+          </TabsContent>
+
+          <TabsContent value="championships">
+            <ChampionshipsTab />
+          </TabsContent>
+
+          <TabsContent value="products">
+            <ProductsTab />
+          </TabsContent>
+
+          <TabsContent value="advertisements">
+            <AdvertisementsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Add Modal overlays */}
+      {showAddChampionship && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <AddChampionshipForm
+            onSuccess={() => setShowAddChampionship(false)}
+            onCancel={() => setShowAddChampionship(false)}
+          />
+        </div>
+      )}
+
+      {showAddProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <AddProductForm
+            onSuccess={() => setShowAddProduct(false)}
+            onCancel={() => setShowAddProduct(false)}
+          />
+        </div>
+      )}
+
+      {showAddAdvertisement && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <AddAdvertisementForm
+            onSuccess={() => setShowAddAdvertisement(false)}
+            onCancel={() => setShowAddAdvertisement(false)}
+          />
+        </div>
+      )}
+
+      {/* Edit Modal overlays */}
+      {editingChampionship && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <EditChampionshipForm
+            championship={editingChampionship}
+            onSuccess={() => setEditingChampionship(null)}
+            onCancel={() => setEditingChampionship(null)}
+          />
+        </div>
+      )}
+
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <EditProductForm
+            product={editingProduct}
+            onSuccess={() => setEditingProduct(null)}
+            onCancel={() => setEditingProduct(null)}
+          />
+        </div>
+      )}
+
+      {editingAdvertisement && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <EditAdvertisementForm
+            advertisement={editingAdvertisement}
+            onSuccess={() => setEditingAdvertisement(null)}
+            onCancel={() => setEditingAdvertisement(null)}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;

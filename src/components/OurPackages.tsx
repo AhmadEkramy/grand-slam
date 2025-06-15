@@ -1,0 +1,53 @@
+import React from 'react';
+
+const packages = [
+  { hours: 1, price: 250, vip: false },
+  { hours: 2, price: 450, vip: false },
+  { hours: 3, price: 650, vip: false },
+  { hours: 4, price: 850, vip: true },
+];
+
+const OurPackages: React.FC = () => {
+  return (
+    <section className="py-20 bg-white">
+      <div className="container mx-auto px-4 text-center">
+        <h2 className="text-5xl font-extrabold text-primary mb-4">Our Packages</h2>
+        <p className="text-xl text-gray-500 mb-12">Choose the perfect duration for your game</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-center">
+          {packages.map((pkg, idx) => (
+            <div
+              key={pkg.hours}
+              className={`relative bg-white rounded-2xl shadow-sm border ${pkg.vip ? 'border-green-400' : 'border-gray-200'} flex flex-col items-center py-10 px-6 transition-all duration-300 hover:shadow-lg`}
+            >
+              {pkg.vip && (
+                <span className="absolute top-5 right-5 flex items-center bg-gradient-to-r from-green-400 to-cyan-500 text-white text-sm font-semibold px-4 py-1 rounded-full">
+                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 17l4 4 4-4m-4-5v9" /></svg>
+                  VIP
+                </span>
+              )}
+              <div className="flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 text-green-500 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" /></svg>
+                <span className="text-2xl font-bold text-primary">{pkg.hours} Hour{pkg.hours > 1 ? 's' : ''}</span>
+              </div>
+              <div className="mb-8">
+                <span className="text-5xl font-extrabold text-primary">{pkg.price}</span>
+                <span className="text-lg text-gray-500 ml-2">EGP</span>
+              </div>
+              <button
+                className={
+                  pkg.vip
+                    ? 'w-full py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-green-400 to-cyan-500 hover:from-green-600 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 shadow-md'
+                    : 'w-full py-3 rounded-lg font-semibold text-white bg-[#13005A] hover:bg-[#1C82AD] hover:shadow-lg transition-all duration-300 shadow-md'
+                }
+              >
+                Book Now
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default OurPackages; 
