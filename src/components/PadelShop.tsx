@@ -7,7 +7,7 @@ const PadelShop: React.FC = () => {
   const { products } = useProducts();
 
   const handlePurchase = (product: any) => {
-    const message = encodeURIComponent(`Hi! I'm interested in purchasing ${product.name} for ${product.price} EGP`);
+    const message = encodeURIComponent(t('whatsappPurchaseMsg', `Hi! I'm interested in purchasing ${product.name} for ${product.price} EGP`));
     window.open(`https://wa.me/+201006115163?text=${message}`, '_blank');
   };
 

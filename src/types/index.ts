@@ -1,4 +1,3 @@
-
 export interface Booking {
   id: string;
   fullName: string;
@@ -21,6 +20,11 @@ export interface Product {
   description: string;
 }
 
+export interface TeamPair {
+  teamA: string;
+  teamB: string;
+}
+
 export interface Championship {
   id: string;
   title: string;
@@ -29,6 +33,7 @@ export interface Championship {
   time: string;
   registrationEnabled: boolean;
   image?: string;
+  teams?: TeamPair[];
 }
 
 export interface Advertisement {

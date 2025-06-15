@@ -32,6 +32,15 @@ const Championships: React.FC = () => {
               <p className="text-gray-600 mb-4">
                 {championship.description}
               </p>
+              {championship.teams && (
+                <div className="text-primary font-semibold mb-2">
+                  {t('teamsPlaying', 'Teams Playing:')} {Array.isArray(championship.teams)
+                    ? championship.teams.map((matchup: any, idx: number) => (
+                        <div key={idx}>{matchup.teamA} vs {matchup.teamB}</div>
+                      ))
+                    : championship.teams}
+                </div>
+              )}
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <p className="text-accent font-semibold">📅 {championship.date}</p>

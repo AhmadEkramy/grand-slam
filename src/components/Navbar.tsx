@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
 
@@ -10,6 +10,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -27,6 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   };
 
   const handleNavigation = (page: string) => {
+    setMobileMenuOpen(false);
     if (page === 'home') {
       onNavigate('home');
       setTimeout(() => {
@@ -35,7 +37,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     } else if (page === 'admin') {
       onNavigate('admin');
     } else {
-      // For other pages, navigate to home first then scroll to section
       onNavigate('home');
       setTimeout(() => {
         scrollToSection(page);
@@ -69,7 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 currentPage === 'courtAvailability' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'
               }`}
             >
-              Court
+              {t('court', 'Court')}
             </button>
             <button
               onClick={() => handleNavigation('padelShop')}
@@ -77,7 +78,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 currentPage === 'padelShop' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'
               }`}
             >
-              Market
+              {t('market', 'Market')}
             </button>
             <button
               onClick={() => handleNavigation('championships')}
@@ -85,7 +86,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 currentPage === 'championships' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'
               }`}
             >
-              Championships
+              {t('championships', 'Championships')}
             </button>
             <button
               onClick={() => handleNavigation('admin')}
@@ -102,11 +103,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               onClick={toggleLanguage}
               className="btn-outline px-3 py-2 text-sm"
             >
-              {language === 'en' ? 'العربية' : 'English'}
+              {language === 'en' ? 'العربية' : t('english', 'English')}
             </button>
             
             <div className="md:hidden">
-              <button className="text-primary">
+              <button className="text-primary" onClick={() => setMobileMenuOpen(true)}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -115,6 +116,53 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
           </div>
         </div>
       </div>
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-40 z-50 transition-opacity duration-300"
+            onClick={() => setMobileMenuOpen(false)}
+          ></div>
+          <div className="fixed top-0 right-0 w-64 h-full bg-white shadow-lg z-50 flex flex-col p-6 animate-slide-in">
+            <button
+              className="self-end mb-6 text-2xl text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+            >
+              &times;
+            </button>
+            <button
+              onClick={() => handleNavigation('home')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'home' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('home', 'Home')}
+            </button>
+            <button
+              onClick={() => handleNavigation('courtAvailability')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'courtAvailability' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('court', 'Court')}
+            </button>
+            <button
+              onClick={() => handleNavigation('padelShop')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'padelShop' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('market', 'Market')}
+            </button>
+            <button
+              onClick={() => handleNavigation('championships')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'championships' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('championships', 'Championships')}
+            </button>
+            <button
+              onClick={() => handleNavigation('admin')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'admin' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('admin', 'Admin')}
+            </button>
+          </div>
+        </>
+      )}
     </nav>
   );
 };

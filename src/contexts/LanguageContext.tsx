@@ -52,7 +52,14 @@ const translations: Translations = {
   edit: { en: 'Edit', ar: 'تعديل' },
   delete: { en: 'Delete', ar: 'حذف' },
   save: { en: 'Save', ar: 'حفظ' },
-  close: { en: 'Close', ar: 'إغلاق' }
+  close: { en: 'Close', ar: 'إغلاق' },
+  ourPackages: { en: 'Our Packages', ar: 'باقاتنا' },
+  chooseDuration: { en: 'Choose the perfect duration for your game', ar: 'اختر المدة المثالية للعبتك' },
+  vip: { en: 'VIP', ar: 'كبار الشخصيات' },
+  hour: { en: 'Hour', ar: 'ساعة' },
+  whatsappPurchaseMsg: { en: `Hi! I'm interested in purchasing {name} for {price} EGP`, ar: 'مرحبًا! أود شراء {name} مقابل {price} جنيه' },
+  market: { en: 'Market', ar: 'السوق' },
+  english: { en: 'English', ar: 'الإنجليزية' },
 };
 
 interface LanguageContextType {

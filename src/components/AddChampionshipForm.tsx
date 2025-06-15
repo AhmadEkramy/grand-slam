@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useChampionships } from '../hooks/useChampionships';
 import { Button } from './ui/button';
@@ -12,6 +12,11 @@ interface AddChampionshipFormProps {
   onCancel: () => void;
 }
 
+interface TeamPair {
+  teamA: string;
+  teamB: string;
+}
+
 interface ChampionshipFormData {
   title: string;
   description: string;
@@ -20,12 +25,14 @@ interface ChampionshipFormData {
   location: string;
   registrationEnabled: boolean;
   image?: string;
+  teams?: TeamPair[];
 }
 
 const AddChampionshipForm: React.FC<AddChampionshipFormProps> = ({ onSuccess, onCancel }) => {
   const { addChampionship, loading } = useChampionships();
-  
-  const form = useForm<ChampionshipFormData>({
+  const [teams, setTeams] = useState<TeamPair[]>([]);
+
+  const form = useForm<Omit<ChampionshipFormData, 'teams'>>({
     defaultValues: {
       title: '',
       description: '',
@@ -33,16 +40,29 @@ const AddChampionshipForm: React.FC<AddChampionshipFormProps> = ({ onSuccess, on
       time: '',
       location: '',
       registrationEnabled: true,
+      image: '',
     },
   });
 
-  const onSubmit = async (data: ChampionshipFormData) => {
+  const onSubmit = async (data: Omit<ChampionshipFormData, 'teams'>) => {
     try {
-      await addChampionship(data);
+      await addChampionship({ ...data, teams });
       onSuccess();
     } catch (error) {
       console.error('Error adding championship:', error);
     }
+  };
+
+  const handleTeamChange = (idx: number, field: keyof TeamPair, value: string) => {
+    setTeams(prev => prev.map((team, i) => i === idx ? { ...team, [field]: value } : team));
+  };
+
+  const handleAddTeam = () => {
+    setTeams(prev => [...prev, { teamA: '', teamB: '' }]);
+  };
+
+  const handleRemoveTeam = (idx: number) => {
+    setTeams(prev => prev.filter((_, i) => i !== idx));
   };
 
   return (
@@ -157,6 +177,32 @@ const AddChampionshipForm: React.FC<AddChampionshipFormProps> = ({ onSuccess, on
               </FormItem>
             )}
           />
+
+          {/* Teams input */}
+          <div>
+            <label className="block font-medium mb-2">Teams Playing</label>
+            {teams.map((team, idx) => (
+              <div key={idx} className="flex gap-2 mb-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Team A"
+                  value={team.teamA}
+                  onChange={e => handleTeamChange(idx, 'teamA', e.target.value)}
+                  className="form-control flex-1"
+                />
+                <span className="mx-1">vs</span>
+                <input
+                  type="text"
+                  placeholder="Team B"
+                  value={team.teamB}
+                  onChange={e => handleTeamChange(idx, 'teamB', e.target.value)}
+                  className="form-control flex-1"
+                />
+                <button type="button" onClick={() => handleRemoveTeam(idx)} className="text-red-500 text-lg font-bold px-2">&times;</button>
+              </div>
+            ))}
+            <button type="button" onClick={handleAddTeam} className="btn-outline mt-2">Add a team</button>
+          </div>
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={loading} className="flex-1 bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300">
