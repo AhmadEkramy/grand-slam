@@ -1,73 +1,144 @@
-# Welcome to your Lovable project
+# Padel Court Reservation System
 
-## Project info
+A modern web application for managing padel court reservations, built with React, TypeScript, and Firebase.
 
-**URL**: https://lovable.dev/projects/ca87e3f1-93d0-4d2a-bce6-1621596040e7
+## Features
 
-## How can I edit this code?
+- 🎾 **Court Reservation System**
+  - Real-time court availability
+  - Easy booking process
+  - Multiple court support
+  - Date and time slot selection
 
-There are several ways of editing your application.
+- 🏆 **Championships Management**
+  - View upcoming championships
+  - Tournament information
+  - Registration system
 
-**Use Lovable**
+- 🛍️ **Padel Shop**
+  - Browse padel equipment
+  - Product catalog
+  - Secure checkout
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ca87e3f1-93d0-4d2a-bce6-1621596040e7) and start prompting.
+- 📢 **Advertisement System**
+  - Featured advertisements
+  - Promotional content
+  - Call-to-action links
 
-Changes made via Lovable will be committed automatically to this repo.
+- 👤 **User Management**
+  - User authentication
+  - Booking history
+  - Profile management
 
-**Use your preferred IDE**
+- 👨‍💼 **Admin Dashboard**
+  - Court management
+  - Booking oversight
+  - Championship organization
+  - Product management
+  - Advertisement control
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**
+  - React
+  - TypeScript
+  - Tailwind CSS
+  - React Router
+  - React Query
 
-Follow these steps:
+- **Backend**
+  - Firebase
+  - Firestore
+  - Firebase Authentication
+  - Firebase Storage
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Node.js (v14 or higher)
+- npm or yarn
+- Firebase account
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/padel-court-reservation.git
+   cd padel-court-reservation
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. Create a Firebase project and add your configuration:
+   - Create a new Firebase project
+   - Enable Authentication, Firestore, and Storage
+   - Add your Firebase configuration to `src/config/firebase.ts`
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+├── contexts/       # React contexts
+├── hooks/         # Custom hooks
+├── pages/         # Page components
+├── config/        # Configuration files
+├── types/         # TypeScript types
+└── lib/           # Utility functions
 ```
 
-**Edit a file directly in GitHub**
+## Features in Detail
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Court Reservation
+- Real-time availability checking
+- Multiple court support
+- Flexible time slot selection
+- Booking confirmation system
 
-**Use GitHub Codespaces**
+### Admin Features
+- Comprehensive dashboard
+- Booking management
+- User management
+- Championship organization
+- Product catalog management
+- Advertisement system
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### User Features
+- Easy booking process
+- Booking history
+- Profile management
+- Championship registration
 
-## What technologies are used for this project?
+## Contributing
 
-This project is built with:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-Simply open [Lovable](https://lovable.dev/projects/ca87e3f1-93d0-4d2a-bce6-1621596040e7) and click on Share -> Publish.
+## Contact
 
-## Can I connect a custom domain to my Lovable project?
+Ahmed Ekramy - Computer Engineer & Full Stack Developer
 
-Yes, you can!
+## Acknowledgments
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Thanks to all contributors
+- Special thanks to the padel community for their support

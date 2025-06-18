@@ -29,7 +29,7 @@ const translations: Translations = {
   courtAvailability: { en: 'Court Availability', ar: 'توفر الملاعب' },
   shop: { en: 'Padel Shop', ar: 'متجر البادل' },
   championships: { en: 'Championships', ar: 'البطولات' },
-  advertisements: { en: 'Advertisements', ar: 'الإعلانات' },
+  advertisements: { en: 'Our Sponsors', ar: 'الرعاة الرسميين' },
   fullName: { en: 'Full Name', ar: 'الاسم الكامل' },
   phoneNumber: { en: 'Phone Number', ar: 'رقم الهاتف' },
   selectCourt: { en: 'Select Court', ar: 'اختر الملعب' },

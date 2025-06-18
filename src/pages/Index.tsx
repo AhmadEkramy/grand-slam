@@ -60,6 +60,7 @@ const Index = () => {
             <div id="hero">
               <HeroSection onBookNowClick={() => setShowBookingModal(true)} />
             </div>
+            <Advertisements />
             <div id="courtAvailability">
               <CourtAvailability onBookSlot={handleBookSlot} />
             </div>
@@ -72,7 +73,6 @@ const Index = () => {
             <div id="championships">
               <Championships />
             </div>
-            <Advertisements />
           </>
         );
     }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAdvertisements } from '../hooks/useAdvertisements';
@@ -14,21 +13,21 @@ const Advertisements: React.FC = () => {
           {t('advertisements', 'Advertisements')}
         </h2>
         
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {advertisements.map(ad => (
             <div key={ad.id} className="card hover-lift cursor-pointer">
               <img
                 src={ad.image}
                 alt={ad.title || 'Advertisement'}
-                className="w-full h-64 object-cover rounded-lg mb-4"
+                className="w-full h-40 object-cover rounded-lg mb-4"
               />
               {ad.title && (
-                <h3 className="text-2xl font-bold text-primary mb-2">
+                <h3 className="text-xl font-bold text-primary mb-2">
                   {ad.title}
                 </h3>
               )}
               {ad.description && (
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 mb-4 line-clamp-2">
                   {ad.description}
                 </p>
               )}
