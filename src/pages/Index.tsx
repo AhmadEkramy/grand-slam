@@ -10,9 +10,9 @@ import Advertisements from '../components/Advertisements';
 import BookingModal from '../components/BookingModal';
 import AdminDashboard from '../components/AdminDashboard';
 import LoginPage from '../components/LoginPage';
-import WhatsAppFloat from '../components/WhatsAppFloat';
-import { useBookings } from '../hooks/useBookings';
 import OurPackages from '../components/OurPackages';
+import SocialFloat from '../components/SocialFloat';
+import { useBookings } from '../hooks/useBookings';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -103,7 +103,7 @@ const Index = () => {
           />
         )}
 
-        <WhatsAppFloat />
+        <SocialFloat />
       </div>
     </LanguageProvider>
   );
