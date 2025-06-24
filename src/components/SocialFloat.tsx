@@ -18,7 +18,7 @@ const socials = [
   {
     label: 'Facebook',
     onClick: () => {
-      window.open('https://www.facebook.com/share/16iD6otQMv/', '_blank');
+      window.open('https://www.facebook.com/share/16X9br8kBe/', '_blank');
     },
     color: 'bg-[#1877F3]',
     icon: (
@@ -30,7 +30,7 @@ const socials = [
   {
     label: 'Instagram',
     onClick: () => {
-      window.open('https://www.instagram.com/_ahmedekramy?igsh=MXJmY2ljdjZzenZiMw==', '_blank');
+      window.open('https://www.instagram.com/grandslamacademy1?igsh=MTV3OW1qNDA4NXE5ZA==', '_blank');
     },
     color: 'bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-400',
     icon: (
