@@ -5,7 +5,7 @@ const packages = [
   { hours: 1, price: 250, vip: false },
   { hours: 2, price: 450, vip: false },
   { hours: 3, price: 650, vip: false },
-  { hours: 4, price: 850, vip: true },
+  { hours: 4, price: 800, vip: true },
 ];
 
 const OurPackages: React.FC = () => {

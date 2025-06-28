@@ -16,15 +16,19 @@ const translations: Translations = {
   admin: { en: 'Admin', ar: 'إدارة' },
   bookNow: { en: 'Book Now', ar: 'احجز الآن' },
   court: { en: 'Court', ar: 'الملعب' },
+  court1: { en: 'Court 1', ar: 'ملعب 1' },
+  court2: { en: 'Court 2', ar: 'ملعب 2' },
   available: { en: 'Available', ar: 'متاح' },
   booked: { en: 'Booked', ar: 'محجوز' },
+  selectTime: { en: 'Select Time', ar: 'اختار الوقت' },
+  padelShop: { en: 'Padel Shop', ar: 'منتجات البادل' },
   heroTitle: { 
-    en: 'Book Your Padel Court Today', 
-    ar: 'احجز ملعب البادل اليوم' 
+    en: 'Welcome to the Grand Slam Padel Academy', 
+    ar: 'اهلا بكم فى أكاديمية جراند سلام للبادل' 
   },
   heroSubtitle: { 
-    en: 'Experience the best padel courts in the city with professional equipment and facilities', 
-    ar: 'استمتع بأفضل ملاعب البادل في المدينة مع المعدات والمرافق المهنية' 
+    en: 'Book your court today and enjoy playing padel on the best courts in Damietta Governorate inside the arena.', 
+    ar: 'احجز ملعبك اليوم واستمتع بممارسة البادل على أفضل ملاعب بمحافظة دمياط داخل الساحة' 
   },
   courtAvailability: { en: 'Court Availability', ar: 'توفر الملاعب' },
   shop: { en: 'Padel Shop', ar: 'متجر البادل' },

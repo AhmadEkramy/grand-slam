@@ -59,12 +59,12 @@ const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => 
               <div key={courtNumber} className="rounded-2xl shadow bg-white overflow-hidden">
                 <div className="bg-gradient-to-r from-[#13005A] to-[#1C82AD] px-6 py-4 flex items-center gap-2">
                   <MapPin className="text-green-400 w-6 h-6" />
-                  <span className="text-white text-2xl font-bold">Court {courtNumber}</span>
+                  <span className="text-white text-2xl font-bold">{t(`court${courtNumber}`, `Court ${courtNumber}`)}</span>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-4 text-lg font-semibold text-primary">
                     <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    Select Time
+                    {t('selectTime', 'Select Time')}
                   </div>
                   <div className="grid grid-cols-4 gap-3">
                     {TIME_SLOTS.map(timeSlot => {
@@ -87,11 +87,11 @@ const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => 
                   <div className="flex items-center gap-6 justify-center mt-8">
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-5 h-5 rounded bg-green-400"></span>
-                      <span className="text-gray-700 font-medium">Available</span>
+                      <span className="text-gray-700 font-medium">{t('available', 'Available')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-5 h-5 rounded bg-red-400"></span>
-                      <span className="text-gray-700 font-medium">Booked</span>
+                      <span className="text-gray-700 font-medium">{t('booked', 'Booked')}</span>
                     </div>
                   </div>
                 </div>

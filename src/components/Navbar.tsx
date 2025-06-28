@@ -78,7 +78,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 currentPage === 'padelShop' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'
               }`}
             >
-              {t('market', 'Market')}
+              {t('padelShop', 'Padel Shop')}
             </button>
             <button
               onClick={() => handleNavigation('championships')}
@@ -146,7 +146,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               onClick={() => handleNavigation('padelShop')}
               className={`mb-4 nav-link text-lg ${currentPage === 'padelShop' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
             >
-              {t('market', 'Market')}
+              {t('padelShop', 'Padel Shop')}
             </button>
             <button
               onClick={() => handleNavigation('championships')}
