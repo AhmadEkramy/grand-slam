@@ -46,21 +46,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
     e.preventDefault();
     
     const reservationInfo = RESERVATION_TYPES[formData.reservationType];
-    const startHour = parseInt(formData.startTime.split(':')[0]);
-    const startPeriod = formData.startTime.includes('AM') ? 'AM' : 'PM';
-    
-    let endHour = startHour + reservationInfo.duration;
-    let endPeriod = startPeriod;
-    
-    if (startPeriod === 'AM' && endHour >= 12) {
-      endPeriod = 'PM';
-      if (endHour > 12) endHour -= 12;
-    } else if (startPeriod === 'PM' && endHour > 12) {
-      endHour -= 12;
-      if (endHour === 12) endPeriod = 'AM';
-    }
-    
-    const endTime = `${endHour}:00 ${endPeriod}`;
+    const startIdx = TIME_SLOTS.indexOf(formData.startTime);
+    const endIdx = startIdx + reservationInfo.duration;
+    const endTime = TIME_SLOTS[endIdx];
 
     const bookingData = {
       ...formData,
@@ -69,6 +57,20 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, onSubmit, 
     };
 
     onSubmit(bookingData);
+
+    // Send WhatsApp message
+    const whatsappNumber = '201006115163'; // without +
+    const message =
+      `New Booking:%0A` +
+      `Name: ${formData.fullName}%0A` +
+      `Phone: ${formData.phoneNumber}%0A` +
+      `Court: ${formData.court}%0A` +
+      `Date: ${formData.date}%0A` +
+      `Start Time: ${formData.startTime}%0A` +
+      `End Time: ${endTime}%0A` +
+      `Type: ${reservationInfo.label}%0A` +
+      `Price: ${reservationInfo.price}`;
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
   };
 
   useEffect(() => {

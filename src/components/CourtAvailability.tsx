@@ -9,7 +9,7 @@ interface CourtAvailabilityProps {
 }
 
 const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { getAvailableSlots } = useBookings();
   
   // Get today's date properly
@@ -70,6 +70,11 @@ const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => 
                     {TIME_SLOTS.map(timeSlot => {
                       const slot = availableSlots.find(s => s.time === timeSlot && s.court === courtNumber);
                       const isAvailable = slot?.available || false;
+                      // Format time for Arabic
+                      let displayTime = timeSlot;
+                      if (language === 'ar') {
+                        displayTime = timeSlot.replace('AM', 'ص').replace('PM', 'م');
+                      }
                       return (
                         <button
                           key={`${courtNumber}-${timeSlot}`}
@@ -79,7 +84,7 @@ const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => 
                           disabled={!isAvailable}
                           onClick={isAvailable ? () => onBookSlot(courtNumber as 1 | 2, timeSlot, selectedDate) : undefined}
                         >
-                          {timeSlot}
+                          {displayTime}
                         </button>
                       );
                     })}

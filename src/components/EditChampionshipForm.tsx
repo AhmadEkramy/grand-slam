@@ -20,6 +20,7 @@ interface ChampionshipFormData {
   date: string;
   time: string;
   registrationEnabled: boolean;
+  image?: string;
 }
 
 const EditChampionshipForm: React.FC<EditChampionshipFormProps> = ({ championship, onSuccess, onCancel }) => {
@@ -33,6 +34,7 @@ const EditChampionshipForm: React.FC<EditChampionshipFormProps> = ({ championshi
       date: championship.date,
       time: championship.time,
       registrationEnabled: championship.registrationEnabled,
+      image: championship.image || '',
     },
   });
 
@@ -43,6 +45,7 @@ const EditChampionshipForm: React.FC<EditChampionshipFormProps> = ({ championshi
       date: championship.date,
       time: championship.time,
       registrationEnabled: championship.registrationEnabled,
+      image: championship.image || '',
     });
     setTeams(championship.teams || []);
   }, [championship, form]);
@@ -98,6 +101,20 @@ const EditChampionshipForm: React.FC<EditChampionshipFormProps> = ({ championshi
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Championship description" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="image"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Image URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com/image.png" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

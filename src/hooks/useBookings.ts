@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   collection, 
@@ -12,7 +11,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Booking, TimeSlot } from '../types';
+import { Booking, TimeSlot, TIME_SLOTS, RESERVATION_TYPES } from '../types';
 
 export const useBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -83,35 +82,23 @@ export const useBookings = () => {
       .filter(booking => booking.date === date && booking.status !== 'canceled')
       .flatMap(booking => {
         const slots = [];
-        const startHour = parseInt(booking.startTime.split(':')[0]);
-        const endHour = parseInt(booking.endTime.split(':')[0]);
-        const isAM = booking.startTime.includes('AM');
-        const isEndAM = booking.endTime.includes('AM');
+        const startIdx = TIME_SLOTS.indexOf(booking.startTime);
+        const duration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
         
-        let start = isAM ? startHour : startHour === 12 ? 12 : startHour + 12;
-        let end = isEndAM ? endHour : endHour === 12 ? 12 : endHour + 12;
-        
-        if (start === 0) start = 24;
-        if (end === 0) end = 24;
-        
-        for (let i = start; i < end; i++) {
-          const hour = i === 24 ? 0 : i;
-          const time12 = hour === 0 ? '12:00 AM' : 
-                        hour < 12 ? `${hour}:00 AM` :
-                        hour === 12 ? '12:00 PM' :
-                        `${hour - 12}:00 PM`;
-          slots.push({ time: time12, available: false, court: booking.court });
+        if (startIdx === -1) return [];
+
+        for (let i = 0; i < duration; i++) {
+          const idx = startIdx + i;
+          if (idx < TIME_SLOTS.length) {
+            slots.push({ time: TIME_SLOTS[idx], available: false, court: booking.court });
+          }
         }
         return slots;
       });
 
     const allSlots: TimeSlot[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      const time12 = hour === 0 ? '12:00 AM' : 
-                    hour < 12 ? `${hour}:00 AM` :
-                    hour === 12 ? '12:00 PM' :
-                    `${hour - 12}:00 PM`;
-      
+    for (let i = 0; i < TIME_SLOTS.length; i++) {
+      const time12 = TIME_SLOTS[i];
       [1, 2].forEach(court => {
         const isBooked = bookedSlots.some(slot => 
           slot.time === time12 && slot.court === court
@@ -123,7 +110,6 @@ export const useBookings = () => {
         });
       });
     }
-
     return allSlots;
   };
 
