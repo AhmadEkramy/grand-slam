@@ -64,6 +64,12 @@ const translations: Translations = {
   whatsappPurchaseMsg: { en: `Hi! I'm interested in purchasing {name} for {price} EGP`, ar: 'مرحبًا! أود شراء {name} مقابل {price} جنيه' },
   market: { en: 'Market', ar: 'السوق' },
   english: { en: 'English', ar: 'الإنجليزية' },
+  trainingSectionTitle: { en: 'Training Section', ar: 'قسم التدريب' },
+  trainingCard1Title: { en: 'Beginner Padel Training', ar: 'تدريب البادل للمبتدئين' },
+  trainingCard1Desc: { en: 'Learn the basics of padel with our expert coaches. Perfect for newcomers!', ar: 'تعلم أساسيات البادل مع مدربينا الخبراء. مثالي للمبتدئين!' },
+  trainingCard2Title: { en: 'Advanced Padel Training', ar: 'تدريب البادل المتقدم' },
+  trainingCard2Desc: { en: 'Take your padel skills to the next level with advanced drills and tactics.', ar: 'ارتق بمهاراتك في البادل إلى المستوى التالي مع تدريبات وتكتيكات متقدمة.' },
+  subscribeNow: { en: 'Subscribe now', ar: 'اشترك الآن' },
 };
 
 interface LanguageContextType {

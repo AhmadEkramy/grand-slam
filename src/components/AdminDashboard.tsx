@@ -5,6 +5,7 @@ import { useChampionships } from '../hooks/useChampionships';
 import { useProducts } from '../hooks/useProducts';
 import { useAdvertisements } from '../hooks/useAdvertisements';
 import { useAuth } from '../hooks/useAuth';
+import { useTrainingCards } from '../hooks/useBookings';
 import { Calendar, BarChart3, Trophy, Package, Megaphone, Filter, Search, Plus, User, Trash2, Check, X, Edit, Home, LogOut, DollarSign } from 'lucide-react';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -15,7 +16,10 @@ import AddAdvertisementForm from './AddAdvertisementForm';
 import EditChampionshipForm from './EditChampionshipForm';
 import EditProductForm from './EditProductForm';
 import EditAdvertisementForm from './EditAdvertisementForm';
-import { Championship, Product, Advertisement } from '../types';
+import AddRecurringBookingForm from './AddRecurringBookingForm';
+import { Championship, Product, Advertisement, TrainingCard } from '../types';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 interface AdminDashboardProps {
   onNavigateHome: () => void;
@@ -24,10 +28,11 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const { t } = useLanguage();
   const { logout } = useAuth();
-  const { bookings, updateBooking, deleteBooking, loading } = useBookings();
+  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking } = useBookings();
   const { championships, deleteChampionship, loading: championshipsLoading } = useChampionships();
   const { products, deleteProduct, loading: productsLoading } = useProducts();
   const { advertisements, deleteAdvertisement, loading: advertisementsLoading } = useAdvertisements();
+  const { trainingCards: firestoreTrainingCards, loading: trainingLoading, addTrainingCard, updateTrainingCard, deleteTrainingCard } = useTrainingCards();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -38,11 +43,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const [showAddChampionship, setShowAddChampionship] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddAdvertisement, setShowAddAdvertisement] = useState(false);
+  const [showAddRecurringBooking, setShowAddRecurringBooking] = useState(false);
+  const [loadingRecurring, setLoadingRecurring] = useState(false);
   
   // Edit modal states
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingAdvertisement, setEditingAdvertisement] = useState<Advertisement | null>(null);
+  const [showTrainingForm, setShowTrainingForm] = useState(false);
+  const [editingTraining, setEditingTraining] = useState(null);
 
   const handleStatusChange = async (bookingId: string, status: 'approved' | 'canceled') => {
     await updateBooking(bookingId, { status });
@@ -133,6 +142,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
       <div className="flex items-center gap-2">
         <Filter className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-primary">Reservation Dashboard</h3>
+        <Button
+          className="ml-4 bg-[#13005A] hover:bg-[#1C82AD] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          onClick={() => setShowAddRecurringBooking(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add a fixed weekly booking
+        </Button>
+      </div>
+      <div className="mt-4">
+        <h3 className="text-lg font-semibold mb-2">Current Fixed Weekly Bookings</h3>
+        {recurringBookings.length === 0 ? (
+          <p className="text-gray-500">No fixed weekly bookings yet.</p>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {recurringBookings.map(rb => (
+              <li key={rb.id} className="py-2 flex items-center justify-between">
+                <span>
+                  <b>Court {rb.court}</b> - {rb.dayOfWeek.charAt(0).toUpperCase() + rb.dayOfWeek.slice(1)}, {rb.startTime} ({rb.duration} hour{rb.duration > 1 ? 's' : ''})<br/>
+                  <span className='text-gray-600 text-sm'>{rb.fullName} - {rb.phoneNumber}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => rb.id && deleteRecurringBooking(rb.id)}
+                  disabled={loadingRecurring || loading}
+                >
+                  Delete
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Filters */}
@@ -654,6 +695,62 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
     </div>
   );
 
+  const TrainingTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 justify-between">
+        <h3 className="text-lg font-semibold text-primary">Training Manager</h3>
+        <Button className="bg-[#13005A] text-white" onClick={() => { setShowTrainingForm(true); setEditingTraining(null); }}>Add Training Card</Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {(firestoreTrainingCards || []).map(card => (
+          <div key={card.id} className="card flex flex-col items-center text-center">
+            <img src={card.image} alt={card.title} className="w-full h-40 object-cover rounded-lg mb-2" />
+            <h4 className="text-xl font-bold mb-1">{card.title}</h4>
+            <p className="text-gray-600 mb-2">{card.description}</p>
+            <span className="text-lg font-bold text-green-700 mb-2">{card.price} EGP</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => { setEditingTraining(card); setShowTrainingForm(true); }}>Edit</Button>
+              <Button size="sm" variant="destructive" onClick={() => card.id && deleteTrainingCard(card.id)}>Delete</Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {(showTrainingForm || editingTraining) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">{editingTraining ? 'Edit Training Card' : 'Add Training Card'}</h2>
+            <TrainingForm
+              initial={editingTraining || undefined}
+              onSubmit={async (card) => {
+                if (editingTraining && editingTraining.id) {
+                  await updateTrainingCard(editingTraining.id, card);
+                  setEditingTraining(null);
+                } else {
+                  await addTrainingCard(card);
+                }
+                setShowTrainingForm(false);
+              }}
+              onCancel={() => { setShowTrainingForm(false); setEditingTraining(null); }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Add handler for recurring booking
+  const handleAddRecurringBooking = async (data) => {
+    setLoadingRecurring(true);
+    try {
+      await addDoc(collection(db, 'recurring_bookings'), data);
+      setShowAddRecurringBooking(false);
+    } catch (error) {
+      alert('Error adding recurring booking: ' + error.message);
+    } finally {
+      setLoadingRecurring(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -693,7 +790,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
 
         {/* Tabs */}
         <Tabs defaultValue="reservations" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm rounded-lg p-2 h-auto">
+          <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm rounded-lg p-2 h-auto">
             <TabsTrigger 
               value="reservations" 
               className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
@@ -729,6 +826,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
               <Megaphone className="w-4 h-4" />
               <span className="font-medium">Advertisements</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="training" 
+              className="flex items-center gap-2 p-3 text-gray-600 data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 hover:bg-gray-100"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="font-medium">Training</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="reservations">
@@ -749,6 +853,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
 
           <TabsContent value="advertisements">
             <AdvertisementsTab />
+          </TabsContent>
+
+          <TabsContent value="training">
+            <TrainingTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -778,6 +886,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
             onSuccess={() => setShowAddAdvertisement(false)}
             onCancel={() => setShowAddAdvertisement(false)}
           />
+        </div>
+      )}
+
+      {showAddRecurringBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Add a Fixed Weekly Booking</h2>
+            <AddRecurringBookingForm
+              onSubmit={handleAddRecurringBooking}
+              onCancel={() => setShowAddRecurringBooking(false)}
+              loading={loadingRecurring}
+            />
+          </div>
         </div>
       )}
 
@@ -812,6 +933,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
         </div>
       )}
     </div>
+  );
+};
+
+const TrainingForm = ({ initial, onSubmit, onCancel }: { initial?: TrainingCard, onSubmit: (card: TrainingCard | Omit<TrainingCard, 'id'>) => void, onCancel: () => void }) => {
+  const [form, setForm] = useState<Partial<TrainingCard>>(initial || { price: 0 });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: name === 'price' ? Number(value) : value }));
+  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.description || !form.image || !form.price) return;
+    onSubmit(initial ? { ...form, id: initial.id } as TrainingCard : form as Omit<TrainingCard, 'id'>);
+  };
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input name="title" value={form.title || ''} onChange={handleChange} placeholder="Title" className="form-control" required />
+      <textarea name="description" value={form.description || ''} onChange={handleChange} placeholder="Description" className="form-control" required />
+      <input name="image" value={form.image || ''} onChange={handleChange} placeholder="Image URL" className="form-control" required />
+      <input name="price" type="number" value={form.price || 0} onChange={handleChange} placeholder="Price" className="form-control" required min={0} />
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" className="bg-[#13005A] text-white">{initial ? 'Save' : 'Add'}</Button>
+      </div>
+    </form>
   );
 };
 

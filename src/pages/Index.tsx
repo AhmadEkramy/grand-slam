@@ -10,9 +10,10 @@ import Advertisements from '../components/Advertisements';
 import BookingModal from '../components/BookingModal';
 import AdminDashboard from '../components/AdminDashboard';
 import LoginPage from '../components/LoginPage';
-import OurPackages from '../components/OurPackages';
+import OurPackages, { TrainingSection } from '../components/OurPackages';
 import SocialFloat from '../components/SocialFloat';
-import { useBookings } from '../hooks/useBookings';
+import { useBookings, useTrainingCards } from '../hooks/useBookings';
+import { TrainingCard } from '../types';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -22,6 +23,7 @@ const Index = () => {
   const [selectedCourt, setSelectedCourt] = useState<1 | 2 | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('');
+  const { trainingCards, loading: trainingLoading } = useTrainingCards();
 
   const handleBookingSubmit = async (bookingData: any) => {
     try {
@@ -53,7 +55,7 @@ const Index = () => {
         if (!user) {
           return <LoginPage onBack={() => setCurrentPage('home')} />;
         }
-        return <AdminDashboard onNavigateHome={() => setCurrentPage('home')} />;
+        return <AdminDashboard onNavigateHome={() => setCurrentPage('home')} trainingCards={trainingCards} />;
       default:
         return (
           <>
@@ -69,6 +71,9 @@ const Index = () => {
             </div>
             <div id="padelShop">
               <PadelShop />
+            </div>
+            <div id="trainingSection">
+              <TrainingSection trainings={trainingCards} />
             </div>
             <div id="championships">
               <Championships />

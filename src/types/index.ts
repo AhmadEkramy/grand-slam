@@ -50,6 +50,25 @@ export interface TimeSlot {
   court: 1 | 2;
 }
 
+export interface RecurringBooking {
+  id?: string;
+  court: 1 | 2;
+  dayOfWeek: string; // e.g., 'friday'
+  startTime: string; // e.g., '1:00 PM'
+  duration: number; // in hours
+  fullName: string;
+  phoneNumber: string;
+}
+
+export interface TrainingCard {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  price: number;
+  link?: string;
+}
+
 export const RESERVATION_TYPES = {
   '1hour': { label: '1 Hour', price: 250, duration: 1 },
   '2hours': { label: '2 Hours', price: 450, duration: 2 },

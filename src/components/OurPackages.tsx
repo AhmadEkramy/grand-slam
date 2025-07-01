@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TrainingCard } from '../types';
 
 const packages = [
   { hours: 1, price: 250, vip: false },
@@ -42,6 +43,45 @@ const OurPackages: React.FC = () => {
               >
                 {t('bookNow', 'Book Now')}
               </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+interface TrainingSectionProps {
+  trainings: TrainingCard[];
+}
+
+export const TrainingSection: React.FC<TrainingSectionProps> = ({ trainings }) => {
+  const { t } = useLanguage();
+  const whatsappNumber = '201006115163';
+  const whatsappMsg = encodeURIComponent('I want to subscribe in the padel training');
+  return (
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-4xl font-bold text-center text-primary mb-8">
+          {t('trainingSectionTitle', 'Training Section')}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {trainings.map((training, idx) => (
+            <div key={training.id || idx} className="card flex flex-col items-center text-center">
+              <img src={training.image} alt={training.title} className="w-full h-56 object-cover rounded-lg mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">{training.title}</h3>
+              <p className="text-gray-600 mb-4">{training.description}</p>
+              <div className="flex flex-col items-center gap-2 w-full">
+                <span className="text-lg font-bold text-green-700 mb-2">{training.price} {t('egp', 'EGP')}</span>
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMsg}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#13005A] hover:bg-[#1C82AD] text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all"
+                >
+                  {t('subscribeNow', 'Subscribe now')}
+                </a>
+              </div>
             </div>
           ))}
         </div>
