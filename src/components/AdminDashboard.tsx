@@ -28,7 +28,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const { t } = useLanguage();
   const { logout } = useAuth();
-  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking } = useBookings();
+  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking, updateRecurringBooking } = useBookings();
   const { championships, deleteChampionship, loading: championshipsLoading } = useChampionships();
   const { products, deleteProduct, loading: productsLoading } = useProducts();
   const { advertisements, deleteAdvertisement, loading: advertisementsLoading } = useAdvertisements();
@@ -157,19 +157,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
         ) : (
           <ul className="divide-y divide-gray-200">
             {recurringBookings.map(rb => (
-              <li key={rb.id} className="py-2 flex items-center justify-between">
+              <li key={rb.id} className={`py-2 flex items-center justify-between ${rb.status === 'held' ? 'bg-yellow-100' : ''}`}>
                 <span>
                   <b>Court {rb.court}</b> - {rb.dayOfWeek.charAt(0).toUpperCase() + rb.dayOfWeek.slice(1)}, {rb.startTime} ({rb.duration} hour{rb.duration > 1 ? 's' : ''})<br/>
                   <span className='text-gray-600 text-sm'>{rb.fullName} - {rb.phoneNumber}</span>
                 </span>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => rb.id && deleteRecurringBooking(rb.id)}
-                  disabled={loadingRecurring || loading}
-                >
-                  Delete
-                </Button>
+                <div className="flex gap-2">
+                  {rb.status !== 'held' && (
+                    <Button
+                      size="sm"
+                      style={{ backgroundColor: '#FFD700', color: '#333' }}
+                      onClick={() => rb.id && updateRecurringBooking(rb.id, { status: 'held' })}
+                      disabled={loadingRecurring || loading}
+                    >
+                      Hold
+                    </Button>
+                  )}
+                  {rb.status === 'held' && (
+                    <Button
+                      size="sm"
+                      style={{ backgroundColor: '#22c55e', color: 'white' }}
+                      onClick={() => rb.id && updateRecurringBooking(rb.id, { status: 'active' })}
+                      disabled={loadingRecurring || loading}
+                    >
+                      Continue
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => rb.id && deleteRecurringBooking(rb.id)}
+                    disabled={loadingRecurring || loading}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

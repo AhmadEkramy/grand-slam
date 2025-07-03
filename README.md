@@ -36,6 +36,7 @@ A modern web application for managing padel court reservations, built with React
   - Championship organization
   - Product management
   - Advertisement control
+  - Manage fixed weekly bookings (hold/continue)
 
 ## Tech Stack
 
@@ -115,6 +116,7 @@ src/
 - Championship organization
 - Product catalog management
 - Advertisement system
+- **Fixed Weekly Bookings Control**: Admins can now place any fixed weekly booking on hold (making the slot available for public booking), or continue it (making the slot blocked/unavailable for users). Held bookings are highlighted in gold in the admin dashboard, and users see these slots as available. Continued bookings are shown in red and block user reservations as before.
 
 ### User Features
 - Easy booking process

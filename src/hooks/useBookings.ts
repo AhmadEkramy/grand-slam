@@ -103,6 +103,19 @@ export const useBookings = () => {
     }
   };
 
+  const updateRecurringBooking = async (id: string, updates: Partial<RecurringBooking>) => {
+    setLoading(true);
+    try {
+      const recurringRef = doc(db, 'recurring_bookings', id);
+      await updateDoc(recurringRef, updates);
+    } catch (error) {
+      console.error('Error updating recurring booking:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Helper to get day of week string from date
   const getDayOfWeek = (dateString: string) => {
     const date = new Date(dateString);
@@ -132,7 +145,7 @@ export const useBookings = () => {
     // Recurring bookings for this day of week
     const dayOfWeek = getDayOfWeek(date); // e.g., 'friday'
     const recurringSlots = recurringBookings
-      .filter(rb => rb.dayOfWeek.toLowerCase() === dayOfWeek)
+      .filter(rb => rb.dayOfWeek.toLowerCase() === dayOfWeek && (rb.status !== 'held'))
       .flatMap(rb => {
         const slots = [];
         const startIdx = TIME_SLOTS.indexOf(rb.startTime);
@@ -204,7 +217,9 @@ export const useBookings = () => {
     updateBooking,
     deleteBooking,
     deleteRecurringBooking,
-    getAvailableSlots
+    getAvailableSlots,
+    updateRecurringBooking,
+    getRecurringBookingPrice,
   };
 };
 

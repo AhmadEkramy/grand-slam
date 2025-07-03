@@ -58,6 +58,7 @@ export interface RecurringBooking {
   duration: number; // in hours
   fullName: string;
   phoneNumber: string;
+  status?: 'active' | 'held';
 }
 
 export interface TrainingCard {
