@@ -38,7 +38,11 @@ const Index = () => {
       alert('✅ You have successfully booked the court. Enjoy your game!');
     } catch (error) {
       console.error('Booking failed:', error);
-      alert('Failed to book the court. Please try again.');
+      if (error.message.includes('conflicts')) {
+        alert('❌ ' + error.message);
+      } else {
+        alert('Failed to book the court. Please try again.');
+      }
     }
   };
 
@@ -55,7 +59,7 @@ const Index = () => {
         if (!user) {
           return <LoginPage onBack={() => setCurrentPage('home')} />;
         }
-        return <AdminDashboard onNavigateHome={() => setCurrentPage('home')} trainingCards={trainingCards} />;
+        return <AdminDashboard onNavigateHome={() => setCurrentPage('home')} />;
       default:
         return (
           <>

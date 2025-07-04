@@ -28,7 +28,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const { t } = useLanguage();
   const { logout } = useAuth();
-  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking, updateRecurringBooking } = useBookings();
+  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking, updateRecurringBooking, addRecurringBooking } = useBookings();
   const { championships, deleteChampionship, loading: championshipsLoading } = useChampionships();
   const { products, deleteProduct, loading: productsLoading } = useProducts();
   const { advertisements, deleteAdvertisement, loading: advertisementsLoading } = useAdvertisements();
@@ -764,7 +764,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const handleAddRecurringBooking = async (data) => {
     setLoadingRecurring(true);
     try {
-      await addDoc(collection(db, 'recurring_bookings'), data);
+      await addRecurringBooking(data);
       setShowAddRecurringBooking(false);
     } catch (error) {
       alert('Error adding recurring booking: ' + error.message);

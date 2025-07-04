@@ -47,9 +47,51 @@ export const useBookings = () => {
     return () => unsubscribe();
   }, []);
 
+  // Helper function to check if a new booking conflicts with existing bookings
+  const checkBookingConflict = (newBooking: Omit<Booking, 'id' | 'createdAt' | 'status'>): boolean => {
+    const newStartIndex = TIME_SLOTS.indexOf(newBooking.startTime);
+    const newDuration = RESERVATION_TYPES[newBooking.reservationType]?.duration || 1;
+    const newEndIndex = newStartIndex + newDuration - 1;
+    
+    // Check normal bookings
+    for (const booking of bookings) {
+      if (booking.date === newBooking.date && booking.status !== 'canceled' && booking.court === newBooking.court) {
+        const bookingStartIndex = TIME_SLOTS.indexOf(booking.startTime);
+        const bookingDuration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
+        const bookingEndIndex = bookingStartIndex + bookingDuration - 1;
+        
+        // Check for overlap
+        if (newStartIndex <= bookingEndIndex && newEndIndex >= bookingStartIndex) {
+          return true; // Conflict found
+        }
+      }
+    }
+    
+    // Check recurring bookings
+    const dayOfWeek = getDayOfWeek(newBooking.date);
+    for (const rb of recurringBookings) {
+      if (rb.dayOfWeek.toLowerCase() === dayOfWeek && rb.status !== 'held' && rb.court === newBooking.court) {
+        const rbStartIndex = TIME_SLOTS.indexOf(rb.startTime);
+        const rbEndIndex = rbStartIndex + rb.duration - 1;
+        
+        // Check for overlap
+        if (newStartIndex <= rbEndIndex && newEndIndex >= rbStartIndex) {
+          return true; // Conflict found
+        }
+      }
+    }
+    
+    return false; // No conflict
+  };
+
   const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt' | 'status'>) => {
     setLoading(true);
     try {
+      // Check for conflicts before adding the booking
+      if (checkBookingConflict(booking)) {
+        throw new Error('This time slot conflicts with an existing booking. Please choose a different time.');
+      }
+      
       const newBooking = {
         ...booking,
         createdAt: new Date().toISOString(),
@@ -103,6 +145,46 @@ export const useBookings = () => {
     }
   };
 
+  // Helper function to check if a new recurring booking conflicts with existing bookings
+  const checkRecurringBookingConflict = (newRecurringBooking: Omit<RecurringBooking, 'id'>): boolean => {
+    const newStartIndex = TIME_SLOTS.indexOf(newRecurringBooking.startTime);
+    const newEndIndex = newStartIndex + newRecurringBooking.duration - 1;
+    
+    // Check other recurring bookings on the same day
+    for (const rb of recurringBookings) {
+      if (rb.dayOfWeek.toLowerCase() === newRecurringBooking.dayOfWeek.toLowerCase() && 
+          rb.status !== 'held' && 
+          rb.court === newRecurringBooking.court) {
+        const rbStartIndex = TIME_SLOTS.indexOf(rb.startTime);
+        const rbEndIndex = rbStartIndex + rb.duration - 1;
+        
+        // Check for overlap
+        if (newStartIndex <= rbEndIndex && newEndIndex >= rbStartIndex) {
+          return true; // Conflict found
+        }
+      }
+    }
+    
+    return false; // No conflict
+  };
+
+  const addRecurringBooking = async (recurringBooking: Omit<RecurringBooking, 'id'>) => {
+    setLoading(true);
+    try {
+      // Check for conflicts before adding the recurring booking
+      if (checkRecurringBookingConflict(recurringBooking)) {
+        throw new Error('This time slot conflicts with an existing recurring booking. Please choose a different time.');
+      }
+      
+      await addDoc(collection(db, 'recurring_bookings'), recurringBooking);
+    } catch (error) {
+      console.error('Error adding recurring booking:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateRecurringBooking = async (id: string, updates: Partial<RecurringBooking>) => {
     setLoading(true);
     try {
@@ -123,53 +205,49 @@ export const useBookings = () => {
   };
 
   const getAvailableSlots = (date: string): TimeSlot[] => {
-    // Normal bookings
-    const bookedSlots = bookings
-      .filter(booking => booking.date === date && booking.status !== 'canceled')
-      .flatMap(booking => {
-        const slots = [];
-        const startIdx = TIME_SLOTS.indexOf(booking.startTime);
-        const duration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
-        
-        if (startIdx === -1) return [];
-
-        for (let i = 0; i < duration; i++) {
-          const idx = startIdx + i;
-          if (idx < TIME_SLOTS.length) {
-            slots.push({ time: TIME_SLOTS[idx], available: false, court: booking.court });
+    // Helper function to check if a time slot overlaps with any booking
+    const isTimeSlotOverlapping = (timeSlot: string, court: 1 | 2, bookings: Booking[], recurringBookings: RecurringBooking[]) => {
+      const timeSlotIndex = TIME_SLOTS.indexOf(timeSlot);
+      
+      // Check normal bookings
+      for (const booking of bookings) {
+        if (booking.date === date && booking.status !== 'canceled' && booking.court === court) {
+          const bookingStartIndex = TIME_SLOTS.indexOf(booking.startTime);
+          const bookingDuration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
+          const bookingEndIndex = bookingStartIndex + bookingDuration - 1;
+          
+          // Check if the time slot falls within this booking's time range
+          if (timeSlotIndex >= bookingStartIndex && timeSlotIndex <= bookingEndIndex) {
+            return true;
           }
         }
-        return slots;
-      });
-
-    // Recurring bookings for this day of week
-    const dayOfWeek = getDayOfWeek(date); // e.g., 'friday'
-    const recurringSlots = recurringBookings
-      .filter(rb => rb.dayOfWeek.toLowerCase() === dayOfWeek && (rb.status !== 'held'))
-      .flatMap(rb => {
-        const slots = [];
-        const startIdx = TIME_SLOTS.indexOf(rb.startTime);
-        for (let i = 0; i < rb.duration; i++) {
-          const idx = startIdx + i;
-          if (idx < TIME_SLOTS.length) {
-            slots.push({ time: TIME_SLOTS[idx], available: false, court: rb.court });
+      }
+      
+      // Check recurring bookings
+      const dayOfWeek = getDayOfWeek(date);
+      for (const rb of recurringBookings) {
+        if (rb.dayOfWeek.toLowerCase() === dayOfWeek && rb.status !== 'held' && rb.court === court) {
+          const rbStartIndex = TIME_SLOTS.indexOf(rb.startTime);
+          const rbEndIndex = rbStartIndex + rb.duration - 1;
+          
+          // Check if the time slot falls within this recurring booking's time range
+          if (timeSlotIndex >= rbStartIndex && timeSlotIndex <= rbEndIndex) {
+            return true;
           }
         }
-        return slots;
-      });
+      }
+      
+      return false;
+    };
 
-    // Merge both
-    const allBookedSlots = [...bookedSlots, ...recurringSlots];
     const allSlots: TimeSlot[] = [];
     for (let i = 0; i < TIME_SLOTS.length; i++) {
       const time12 = TIME_SLOTS[i];
       [1, 2].forEach(court => {
-        const isBooked = allBookedSlots.some(slot => 
-          slot.time === time12 && slot.court === court
-        );
+        const isOverlapping = isTimeSlotOverlapping(time12, court as 1 | 2, bookings, recurringBookings);
         allSlots.push({
           time: time12,
-          available: !isBooked,
+          available: !isOverlapping,
           court: court as 1 | 2
         });
       });
@@ -217,6 +295,7 @@ export const useBookings = () => {
     updateBooking,
     deleteBooking,
     deleteRecurringBooking,
+    addRecurringBooking,
     getAvailableSlots,
     updateRecurringBooking,
     getRecurringBookingPrice,
