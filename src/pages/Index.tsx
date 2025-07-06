@@ -14,6 +14,8 @@ import OurPackages, { TrainingSection } from '../components/OurPackages';
 import SocialFloat from '../components/SocialFloat';
 import { useBookings, useTrainingCards } from '../hooks/useBookings';
 import { TrainingCard } from '../types';
+import { Toaster } from "../components/ui/toaster";
+import { toast } from "../hooks/use-toast";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -35,8 +37,10 @@ const Index = () => {
       
       await addBooking(bookingWithUser);
       setShowBookingModal(false);
-      alert('✅ You have successfully booked the court. Enjoy your game!');
-      
+      toast({
+        title: '✅ تم الحجز بنجاح',
+        description: 'تم حجز الملعب بنجاح! استمتع باللعب 🎾',
+      });
       // Send WhatsApp message only after successful booking
       const whatsappNumber = '201006115163'; // without +
       const message =
@@ -53,9 +57,17 @@ const Index = () => {
     } catch (error) {
       console.error('Booking failed:', error);
       if (error.message.includes('conflicts')) {
-        alert('❌ ' + error.message);
+        toast({
+          title: '❌ تعذر الحجز',
+          description: 'هذا الوقت محجوز بالفعل. يرجى اختيار وقت آخر.',
+          variant: 'destructive',
+        });
       } else {
-        alert('Failed to book the court. Please try again.');
+        toast({
+          title: '❌ حدث خطأ',
+          description: 'تعذر إتمام الحجز. حاول مرة أخرى.',
+          variant: 'destructive',
+        });
       }
     }
   };
@@ -127,6 +139,7 @@ const Index = () => {
         )}
 
         <SocialFloat />
+        <Toaster />
       </div>
     </LanguageProvider>
   );
