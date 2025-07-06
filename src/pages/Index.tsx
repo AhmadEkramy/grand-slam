@@ -36,6 +36,20 @@ const Index = () => {
       await addBooking(bookingWithUser);
       setShowBookingModal(false);
       alert('✅ You have successfully booked the court. Enjoy your game!');
+      
+      // Send WhatsApp message only after successful booking
+      const whatsappNumber = '201006115163'; // without +
+      const message =
+        `New Booking:%0A` +
+        `Name: ${bookingData.fullName}%0A` +
+        `Phone: ${bookingData.phoneNumber}%0A` +
+        `Court: ${bookingData.court}%0A` +
+        `Date: ${bookingData.date}%0A` +
+        `Start Time: ${bookingData.startTime}%0A` +
+        `End Time: ${bookingData.endTime}%0A` +
+        `Type: ${bookingData.reservationType}%0A` +
+        `Price: ${bookingData.price}`;
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
     } catch (error) {
       console.error('Booking failed:', error);
       if (error.message.includes('conflicts')) {
