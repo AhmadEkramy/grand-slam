@@ -154,7 +154,6 @@ export const useBookings = () => {
   const checkRecurringBookingConflict = (newRecurringBooking: Omit<RecurringBooking, 'id'>): boolean => {
     const newStartIndex = TIME_SLOTS.indexOf(newRecurringBooking.startTime);
     const newEndIndex = newStartIndex + newRecurringBooking.duration - 1;
-    
     // Check other recurring bookings on the same day
     for (const rb of recurringBookings) {
       if (rb.dayOfWeek.toLowerCase() === newRecurringBooking.dayOfWeek.toLowerCase() && 
@@ -162,15 +161,57 @@ export const useBookings = () => {
           rb.court === newRecurringBooking.court) {
         const rbStartIndex = TIME_SLOTS.indexOf(rb.startTime);
         const rbEndIndex = rbStartIndex + rb.duration - 1;
-        
         // Check for overlap
         if (newStartIndex <= rbEndIndex && newEndIndex >= rbStartIndex) {
           return true; // Conflict found
         }
       }
     }
-    
+    // تحقق من تداخل الحجز الأسبوعي الجديد مع أي حجز عادي موجود
+    for (const booking of bookings) {
+      // قارن اليوم من الأسبوع
+      const bookingDayOfWeek = getDayOfWeek(booking.date);
+      if (
+        bookingDayOfWeek === newRecurringBooking.dayOfWeek.toLowerCase() &&
+        booking.status !== 'canceled' &&
+        booking.court === newRecurringBooking.court
+      ) {
+        const bookingStartIndex = TIME_SLOTS.indexOf(booking.startTime);
+        const bookingDuration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
+        const bookingEndIndex = bookingStartIndex + bookingDuration - 1;
+        // Check for overlap
+        if (newStartIndex <= bookingEndIndex && newEndIndex >= bookingStartIndex) {
+          return true; // Conflict with normal booking
+        }
+      }
+    }
     return false; // No conflict
+  };
+
+  // دالة ترجع قائمة الحجوزات الأسبوعية مع وجود تعارض لو فيه تعارض مع حجز عادي
+  const getRecurringBookingsWithConflicts = () => {
+    return recurringBookings.map(rb => {
+      let hasConflict = false;
+      for (const booking of bookings) {
+        const bookingDayOfWeek = getDayOfWeek(booking.date);
+        if (
+          bookingDayOfWeek === rb.dayOfWeek.toLowerCase() &&
+          booking.status !== 'canceled' &&
+          booking.court === rb.court
+        ) {
+          const bookingStartIndex = TIME_SLOTS.indexOf(booking.startTime);
+          const bookingDuration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
+          const bookingEndIndex = bookingStartIndex + bookingDuration - 1;
+          const rbStartIndex = TIME_SLOTS.indexOf(rb.startTime);
+          const rbEndIndex = rbStartIndex + rb.duration - 1;
+          if (rbStartIndex <= bookingEndIndex && rbEndIndex >= bookingStartIndex) {
+            hasConflict = true;
+            break;
+          }
+        }
+      }
+      return { ...rb, hasConflict };
+    });
   };
 
   const addRecurringBooking = async (recurringBooking: Omit<RecurringBooking, 'id'>) => {
@@ -304,6 +345,7 @@ export const useBookings = () => {
     getAvailableSlots,
     updateRecurringBooking,
     getRecurringBookingPrice,
+    getRecurringBookingsWithConflicts,
   };
 };
 

@@ -28,7 +28,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const { t } = useLanguage();
   const { logout } = useAuth();
-  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking, updateRecurringBooking, addRecurringBooking } = useBookings();
+  const { bookings, recurringBookings, updateBooking, deleteBooking, loading, deleteRecurringBooking, updateRecurringBooking, addRecurringBooking, getRecurringBookingsWithConflicts } = useBookings();
   const { championships, deleteChampionship, loading: championshipsLoading } = useChampionships();
   const { products, deleteProduct, loading: productsLoading } = useProducts();
   const { advertisements, deleteAdvertisement, loading: advertisementsLoading } = useAdvertisements();
@@ -152,14 +152,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
       </div>
       <div className="mt-4">
         <h3 className="text-lg font-semibold mb-2">Current Fixed Weekly Bookings</h3>
-        {recurringBookings.length === 0 ? (
+        {getRecurringBookingsWithConflicts().length === 0 ? (
           <p className="text-gray-500">No fixed weekly bookings yet.</p>
-        ) : (
+        ) :
           <ul className="divide-y divide-gray-200">
-            {recurringBookings.map(rb => (
-              <li key={rb.id} className={`py-2 flex items-center justify-between ${rb.status === 'held' ? 'bg-yellow-100' : ''}`}>
+            {getRecurringBookingsWithConflicts().map(rb => (
+              <li key={rb.id} className={`py-2 flex items-center justify-between ${rb.status === 'held' ? 'bg-yellow-100' : ''}`}> 
                 <span>
-                  <b>Court {rb.court}</b> - {rb.dayOfWeek.charAt(0).toUpperCase() + rb.dayOfWeek.slice(1)}, {rb.startTime} ({rb.duration} hour{rb.duration > 1 ? 's' : ''})<br/>
+                  <b>Court {rb.court}</b> - {rb.dayOfWeek.charAt(0).toUpperCase() + rb.dayOfWeek.slice(1)}, {rb.startTime} ({rb.duration} hour{rb.duration > 1 ? 's' : ''})
+                  {rb.hasConflict && (
+                    <span className="ml-2 px-2 py-1 rounded bg-red-100 text-red-700 font-bold text-xs">وجود تعارض</span>
+                  )}
+                  <br/>
                   <span className='text-gray-600 text-sm'>{rb.fullName} - {rb.phoneNumber}</span>
                 </span>
                 <div className="flex gap-2">
@@ -195,7 +199,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
               </li>
             ))}
           </ul>
-        )}
+        }
       </div>
 
       {/* Filters */}
