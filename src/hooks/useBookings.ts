@@ -49,6 +49,8 @@ export const useBookings = () => {
 
   // Helper function to check if a new booking conflicts with existing bookings
   const checkBookingConflict = (newBooking: Omit<Booking, 'id' | 'createdAt' | 'status'>): boolean => {
+    // إضافة لوج لتسهيل تتبع المشكلة
+    console.log('جاري التحقق من التعارض:', { newBooking, bookings, recurringBookings });
     const newStartIndex = TIME_SLOTS.indexOf(newBooking.startTime);
     const newDuration = RESERVATION_TYPES[newBooking.reservationType]?.duration || 1;
     const newEndIndex = newStartIndex + newDuration - 1;
@@ -62,6 +64,7 @@ export const useBookings = () => {
         
         // Check for overlap
         if (newStartIndex <= bookingEndIndex && newEndIndex >= bookingStartIndex) {
+          console.log('تعارض مع حجز آخر:', booking);
           return true; // Conflict found
         }
       }
@@ -76,6 +79,7 @@ export const useBookings = () => {
         
         // Check for overlap
         if (newStartIndex <= rbEndIndex && newEndIndex >= rbStartIndex) {
+          console.log('تعارض مع حجز أسبوعي:', rb);
           return true; // Conflict found
         }
       }
@@ -89,7 +93,8 @@ export const useBookings = () => {
     try {
       // Check for conflicts before adding the booking
       if (checkBookingConflict(booking)) {
-        throw new Error('This time slot conflicts with an existing booking. Please choose a different time.');
+        // رسالة خطأ واضحة بالعربي
+        throw new Error('هذا الوقت محجوز بالفعل لهذا الملعب. يرجى اختيار وقت آخر.');
       }
       
       const newBooking = {
