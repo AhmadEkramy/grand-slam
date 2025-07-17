@@ -27,6 +27,12 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const { trainingCards, loading: trainingLoading } = useTrainingCards();
 
+  // قائمة إيميلات الأدمن
+  const adminEmails = [
+    'ahmedekramyabdellatif@gmail.com', // عدل هذا الإيميل أو أضف إيميلات الأدمن الحقيقية
+    'mohamed@grandslam.com'
+  ];
+
   const handleBookingSubmit = async (bookingData: any) => {
     try {
       const bookingWithUser = {
@@ -94,7 +100,10 @@ const Index = () => {
             </div>
             <Advertisements />
             <div id="courtAvailability">
-              <CourtAvailability onBookSlot={handleBookSlot} />
+              <CourtAvailability
+                onBookSlot={handleBookSlot}
+                isAdmin={currentPage === 'admin' || (user && adminEmails.includes(user.email))}
+              />
             </div>
             <div id="ourPackages">
               <OurPackages />

@@ -6,9 +6,10 @@ import { MapPin } from 'lucide-react';
 
 interface CourtAvailabilityProps {
   onBookSlot: (court: 1 | 2, time: string, date: string) => void;
+  isAdmin?: boolean;
 }
 
-const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => {
+const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot, isAdmin }) => {
   const { t, language } = useLanguage();
   const { getAvailableSlots } = useBookings();
   
@@ -50,7 +51,7 @@ const CourtAvailability: React.FC<CourtAvailabilityProps> = ({ onBookSlot }) => 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="form-control max-w-xs mx-auto block"
-              min={todayString}
+              {...(isAdmin ? {} : { min: todayString })}
             />
           </div>
 
