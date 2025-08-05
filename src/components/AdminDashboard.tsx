@@ -1,25 +1,23 @@
+import { BarChart3, Calendar, Check, DollarSign, Edit, Filter, Home, LogOut, Megaphone, Package, Plus, Search, Trash2, Trophy, User, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useBookings } from '../hooks/useBookings';
-import { useChampionships } from '../hooks/useChampionships';
-import { useProducts } from '../hooks/useProducts';
 import { useAdvertisements } from '../hooks/useAdvertisements';
 import { useAuth } from '../hooks/useAuth';
-import { useTrainingCards } from '../hooks/useBookings';
-import { Calendar, BarChart3, Trophy, Package, Megaphone, Filter, Search, Plus, User, Trash2, Check, X, Edit, Home, LogOut, DollarSign } from 'lucide-react';
+import { useBookings, useTrainingCards } from '../hooks/useBookings';
+import { useChampionships } from '../hooks/useChampionships';
+import { useProducts } from '../hooks/useProducts';
+import { Advertisement, Championship, Product, TrainingCard } from '../types';
+import AddAdvertisementForm from './AddAdvertisementForm';
+import AddChampionshipForm from './AddChampionshipForm';
+import AddProductForm from './AddProductForm';
+import AddRecurringBookingForm from './AddRecurringBookingForm';
+import EditAdvertisementForm from './EditAdvertisementForm';
+import EditChampionshipForm from './EditChampionshipForm';
+import EditProductForm from './EditProductForm';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import AddChampionshipForm from './AddChampionshipForm';
-import AddProductForm from './AddProductForm';
-import AddAdvertisementForm from './AddAdvertisementForm';
-import EditChampionshipForm from './EditChampionshipForm';
-import EditProductForm from './EditProductForm';
-import EditAdvertisementForm from './EditAdvertisementForm';
-import AddRecurringBookingForm from './AddRecurringBookingForm';
-import { Championship, Product, Advertisement, TrainingCard } from '../types';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 
 interface AdminDashboardProps {
   onNavigateHome: () => void;
@@ -52,9 +50,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const [editingAdvertisement, setEditingAdvertisement] = useState<Advertisement | null>(null);
   const [showTrainingForm, setShowTrainingForm] = useState(false);
   const [editingTraining, setEditingTraining] = useState(null);
+  
+  // Confirmation dialog states
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
 
   const handleStatusChange = async (bookingId: string, status: 'approved' | 'canceled') => {
     await updateBooking(bookingId, { status });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (bookingToDelete) {
+      await deleteBooking(bookingToDelete);
+      setBookingToDelete(null);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (bookingToCancel) {
+      await handleStatusChange(bookingToCancel, 'canceled');
+      setBookingToCancel(null);
+    }
   };
 
   const totalIncome = bookings
@@ -187,14 +203,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
                       Continue
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => rb.id && deleteRecurringBooking(rb.id)}
-                    disabled={loadingRecurring || loading}
-                  >
-                    Delete
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={loadingRecurring || loading}
+                      >
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Fixed Weekly Booking</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to permanently delete this fixed weekly booking? This action cannot be undone and will remove all future recurring bookings for this schedule.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>No, Keep Booking</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => rb.id && deleteRecurringBooking(rb.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Yes, Delete Permanently
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </li>
             ))}
@@ -341,25 +377,65 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
                         >
                           <Check className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleStatusChange(booking.id, 'canceled')}
-                          disabled={loading}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={loading}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to cancel this booking? This action will change the booking status to "canceled".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>No, Keep Booking</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(booking.id, 'canceled')}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Yes, Cancel Booking
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteBooking(booking.id)}
-                      disabled={loading}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to permanently delete this booking? This action cannot be undone and will completely remove the booking from the system.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>No, Keep Booking</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteBooking(booking.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Yes, Delete Permanently
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
@@ -510,14 +586,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteChampionship(championship.id)}
-                        disabled={championshipsLoading}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={championshipsLoading}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Championship</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to permanently delete this championship? This action cannot be undone and will remove the championship and all its registrations from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>No, Keep Championship</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteChampionship(championship.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Yes, Delete Permanently
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -601,14 +697,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteProduct(product.id)}
-                        disabled={productsLoading}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={productsLoading}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to permanently delete this product? This action cannot be undone and will remove the product from the shop.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>No, Keep Product</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteProduct(product.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Yes, Delete Permanently
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -702,14 +818,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteAdvertisement(advertisement.id)}
-                        disabled={advertisementsLoading}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={advertisementsLoading}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Advertisement</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to permanently delete this advertisement? This action cannot be undone and will remove the advertisement from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>No, Keep Advertisement</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteAdvertisement(advertisement.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Yes, Delete Permanently
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -736,7 +872,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
             <span className="text-lg font-bold text-green-700 mb-2">{card.price} EGP</span>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => { setEditingTraining(card); setShowTrainingForm(true); }}>Edit</Button>
-              <Button size="sm" variant="destructive" onClick={() => card.id && deleteTrainingCard(card.id)}>Delete</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive">Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Training Card</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to permanently delete this training card? This action cannot be undone and will remove the training card from the system.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>No, Keep Training Card</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => card.id && deleteTrainingCard(card.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Yes, Delete Permanently
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ))}
