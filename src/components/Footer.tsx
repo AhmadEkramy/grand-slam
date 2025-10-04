@@ -1,4 +1,3 @@
-import React from 'react';
 
 const socialLinks = [
   {
@@ -48,7 +47,7 @@ const Footer = () => (
       >
         Website by Ahmed Ekramy
       </a>
-      <span className="text-sm text-gray-400 mt-1">Computer Engineer & Full Stack Developer</span>
+  <span className="text-sm text-gray-400 mt-1">Computer Engineer</span>
       <div className="flex gap-10 mt-6">
         {socialLinks.map(({ href, label, icon, color }) => (
           <a
