@@ -1,17 +1,18 @@
 
-import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
   onSnapshot,
+  orderBy,
   query,
-  orderBy 
+  updateDoc
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { useEffect, useState } from 'react';
+import { auth, db, firebaseConfig } from '../config/firebase';
 import { Advertisement } from '../types';
+import { toast } from './use-toast';
 
 export const useAdvertisements = () => {
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
@@ -27,6 +28,18 @@ export const useAdvertisements = () => {
         ...doc.data()
       })) as Advertisement[];
       setAdvertisements(advertisementsData);
+    }, (error) => {
+      console.error('Advertisements snapshot error:', error);
+      // diagnostic: log current auth state and project id to help debug permission issues
+      try {
+        console.debug('Advertisements diagnostic - auth.currentUser:', auth.currentUser ? { uid: auth.currentUser.uid, email: auth.currentUser.email } : null);
+        console.debug('Advertisements diagnostic - projectId:', firebaseConfig?.projectId);
+      } catch (dbg) { /* noop */ }
+
+      // show a user-friendly toast for permission errors with a hint
+      const msg = error?.message || 'Failed to load advertisements.';
+  const hint = (error && (error as { code?: string }).code === 'permission-denied') ? 'تحقق من صلاحيات Firestore (admins أو قواعد القراءة العامة).' : '';
+      try { toast({ title: 'خطأ تحميل الإعلانات', description: `${msg} ${hint}`, variant: 'destructive' }); } catch (e) { /* noop */ }
     });
 
     return () => unsubscribe();

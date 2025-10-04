@@ -36,6 +36,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
       }, 100);
     } else if (page === 'admin') {
       onNavigate('admin');
+    } else if (page === 'profile') {
+      onNavigate('profile');
     } else {
       onNavigate('home');
       setTimeout(() => {
@@ -95,6 +97,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               }`}
             >
               {t('admin', 'Admin')}
+            </button>
+            <button
+              onClick={() => handleNavigation('profile')}
+              className={`nav-link transition-all ${
+                currentPage === 'profile' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'
+              }`}
+            >
+              {t('profile', 'Profile')}
             </button>
           </div>
 
@@ -159,6 +169,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               className={`mb-4 nav-link text-lg ${currentPage === 'admin' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
             >
               {t('admin', 'Admin')}
+            </button>
+            <button
+              onClick={() => handleNavigation('profile')}
+              className={`mb-4 nav-link text-lg ${currentPage === 'profile' ? 'text-accent font-semibold' : 'text-primary hover:text-accent'}`}
+            >
+              {t('profile', 'Profile')}
             </button>
           </div>
         </>

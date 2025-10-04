@@ -52,7 +52,7 @@ export const useBookings = () => {
   // options.bookingStatusesToCheck - if provided, only bookings with these statuses will be considered when checking conflicts
   const checkBookingConflict = (
     newBooking: Omit<Booking, 'id' | 'createdAt' | 'status'>,
-    options?: { bookingStatusesToCheck?: string[] }
+    options?: { bookingStatusesToCheck?: string[]; excludingBookingId?: string }
   ): boolean => {
     // إضافة لوج لتسهيل تتبع المشكلة
     console.log('جاري التحقق من التعارض:', { newBooking, bookings, recurringBookings, options });
@@ -60,7 +60,8 @@ export const useBookings = () => {
     const newDuration = RESERVATION_TYPES[newBooking.reservationType]?.duration || 1;
     const newEndIndex = newStartIndex + newDuration - 1;
 
-    const statusesToCheck = options?.bookingStatusesToCheck;
+  const statusesToCheck = options?.bookingStatusesToCheck;
+  const excludingBookingId = options?.excludingBookingId;
 
     // Check normal bookings
     for (const booking of bookings) {
@@ -69,7 +70,9 @@ export const useBookings = () => {
         booking.court === newBooking.court &&
         booking.status !== 'canceled' &&
         // if statusesToCheck is provided, only consider those statuses
-        (!statusesToCheck || statusesToCheck.includes(booking.status))
+        (!statusesToCheck || statusesToCheck.includes(booking.status)) &&
+        // if excludingBookingId provided, ignore that booking (so we don't conflict with itself)
+        booking.id !== excludingBookingId
       ) {
         const bookingStartIndex = TIME_SLOTS.indexOf(booking.startTime);
         const bookingDuration = RESERVATION_TYPES[booking.reservationType]?.duration || 1;
@@ -239,7 +242,7 @@ export const useBookings = () => {
 
           // When checking conflicts for approval, only consider other approved bookings (not pending)
           // Broaden check to include pending as well to avoid approving conflicting pending bookings
-          const conflict = checkBookingConflict(tentative, { bookingStatusesToCheck: ['approved', 'pending'] });
+          const conflict = checkBookingConflict(tentative, { bookingStatusesToCheck: ['approved', 'pending'], excludingBookingId: id });
           if (conflict) {
             const duration = RESERVATION_TYPES[tentative.reservationType]?.duration || 1;
             const suggestions = findAlternativeTimeSlots(tentative.date, tentative.court, duration, 3);

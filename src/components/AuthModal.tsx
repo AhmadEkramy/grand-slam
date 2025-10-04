@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,7 +14,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    fullName: ''
   });
   const [error, setError] = useState('');
 
@@ -24,13 +25,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     
     try {
       if (isSignUp) {
-        await signUp(formData.email, formData.password);
+        await signUp(formData.email, formData.password, formData.fullName || undefined);
       } else {
         await signIn(formData.email, formData.password);
       }
       onClose();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      let msg = 'An error occurred';
+      if (error && typeof error === 'object') {
+        const e = error as Record<string, unknown>;
+        if (typeof e.message === 'string') msg = e.message;
+      }
+      setError(msg);
     }
   };
 
@@ -64,6 +70,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               className="form-control"
             />
           </div>
+
+          {isSignUp && (
+            <div>
+              <label className="block text-gray-700 mb-2">Full name</label>
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                className="form-control"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-gray-700 mb-2">
