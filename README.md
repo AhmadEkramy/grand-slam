@@ -9,6 +9,8 @@ A modern web application for managing padel court reservations, built with React
   - Easy booking process
   - Multiple court support
   - Date and time slot selection
+  - Booking confirmation
+
 
 - 🏆 **Championships Management**
   - View upcoming championships
