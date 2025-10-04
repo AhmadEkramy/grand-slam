@@ -1,5 +1,7 @@
+import { collection, DocumentData, onSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { BarChart3, Calendar, Check, DollarSign, Edit, Filter, Home, LogOut, Megaphone, Package, Plus, Search, Trash2, Trophy, User, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { toast } from '../hooks/use-toast';
 import { useAdvertisements } from '../hooks/useAdvertisements';
@@ -65,11 +67,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
   const handleStatusChange = async (bookingId: string, status: 'approved' | 'canceled') => {
     try {
       await updateBooking(bookingId, { status });
-    } catch (error: any) {
+    } catch (error) {
+      let message = 'Error changing booking status';
+      if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+        message = (error as { message?: string }).message || message;
+      }
       // Show a clear message to the user/admin using app toast
       toast({
         title: 'Action failed',
-        description: error?.message || 'Error changing booking status',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -165,6 +171,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
 
   // Controlled tab for mobile bottom navigation
   const [activeTab, setActiveTab] = useState<'reservations' | 'analytics' | 'championships' | 'products' | 'advertisements' | 'training'>('reservations');
+  const [usersCount, setUsersCount] = useState<number>(0);
+
+  // realtime users count
+  useEffect(() => {
+    const ref = collection(db, 'users');
+    const unsub = onSnapshot(ref, (snap: QuerySnapshot<DocumentData>) => {
+      setUsersCount(snap.size ?? 0);
+    }, (err) => console.warn('Failed to subscribe to users collection for count:', err));
+    return () => unsub();
+  }, []);
 
   const ReservationsTab = () => (
     <div className="space-y-6">
@@ -510,7 +526,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h4 className="text-lg font-semibold mb-2">Total Bookings</h4>
           <p className="text-3xl font-bold text-primary">{bookings.length}</p>
@@ -522,6 +538,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
         <div className="bg-white p-6 rounded-lg shadow">
           <h4 className="text-lg font-semibold mb-2">Available Products</h4>
           <p className="text-3xl font-bold text-blue-600">{products.length}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold mb-2">Total Users</h4>
+          <p className="text-3xl font-bold text-emerald-600">{usersCount}</p>
         </div>
       </div>
     </div>
@@ -989,7 +1009,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
         </div>
 
   {/* Tabs */}
-  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+  <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'reservations' | 'analytics' | 'championships' | 'products' | 'advertisements' | 'training')} className="space-y-6">
           <TabsList className="hidden md:grid w-full grid-cols-6 bg-white shadow-sm rounded-lg p-2 h-auto">
             <TabsTrigger 
               value="reservations" 
