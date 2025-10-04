@@ -11,6 +11,7 @@ import OurPackages, { TrainingSection } from '../components/OurPackages';
 import PadelShop from '../components/PadelShop';
 import Profile from '../components/Profile';
 import SocialFloat from '../components/SocialFloat';
+import { ToastAction } from '../components/ui/toast';
 import { Toaster } from "../components/ui/toaster";
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { toast } from "../hooks/use-toast";
@@ -63,9 +64,13 @@ const Index = () => {
 
       await addBooking(bookingWithUser);
       setShowBookingModal(false);
+      // show success toast with action to navigate to profile
       toast({
         title: '✅ تم الحجز بنجاح',
-        description: 'تم حجز الملعب بنجاح! استمتع باللعب 🎾',
+        description: 'انتظر قبول الحجز فى البروفايل',
+        action: (
+          <ToastAction altText="اذهب للبروفايل" onClick={() => setCurrentPage('profile')}>اذهب للبروفايل</ToastAction>
+        )
       });
       // Send WhatsApp message only after successful booking
       try {
