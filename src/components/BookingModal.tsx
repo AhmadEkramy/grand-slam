@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAppStore, type Booking } from "@/lib/store";
 import { useFirestoreBookings } from "@/hooks/useFirestoreBookings";
+import { useFirestoreCourts } from "@/hooks/useFirestoreCourts";
 import { useAuth } from "@/contexts/AuthContext";
 import { translations } from "@/lib/translations";
 import { X, CheckCircle, Loader2, Tag, Sparkles, Copy, Check, Send, Wallet, Smartphone } from "lucide-react";
@@ -68,8 +69,10 @@ function CopyableNumber({ number, label, icon }: { number: string; label: string
 export default function BookingModal({ court, startHour, date, onClose }: Props) {
   const { lang } = useAppStore();
   const { bookings, addBooking } = useFirestoreBookings();
+  const { courts } = useFirestoreCourts();
   const { appUser } = useAuth();
   const t = translations[lang].booking;
+  const ct = translations[lang].court;
   const [name, setName] = useState(appUser?.name || "");
   const [phone, setPhone] = useState(appUser?.phone || "");
   const [type, setType] = useState<Booking["type"]>("1h");
@@ -80,6 +83,17 @@ export default function BookingModal({ court, startHour, date, onClose }: Props)
   const [bookingPrice, setBookingPrice] = useState(0);
   const normalizedSelectedDate = normalizeDateString(date);
 
+  // Get custom court name or fall back to default
+  const getCourtName = () => {
+    const courtConfig = courts.find(c => c.id === court);
+    if (courtConfig?.customTitle?.[lang]) {
+      return courtConfig.customTitle[lang];
+    }
+    // Fall back to default translations
+    return court === 1 ? ct.court1 : court === 2 ? ct.court2 : court === 3 ? ct.court3 : ct.court4;
+  };
+
+  const courtName = getCourtName();
   const endHour = startHour + durations[type];
 
   const hasConflict = () => {
@@ -142,7 +156,6 @@ export default function BookingModal({ court, startHour, date, onClose }: Props)
   const handleSendTransferScreenshot = () => {
     const whatsappPhone = "201006115163";
     const formatType = type === 'vip' ? 'VIP' : type.replace('h', 'hour');
-    const courtName = court === 3 ? 'Five-a-side Football' : court === 4 ? 'New Padel Court' : `Court ${court}`;
     const message = `صورة تحويل - تأكيد حجز:\nالاسم: ${name}\nالهاتف: ${phone}\nالملعب: ${courtName}\nالتاريخ: ${date}\nمن: ${formatHour(startHour)}\nإلى: ${formatHour(endHour)}\nالنوع: ${formatType}\nالمبلغ: ${bookingPrice} جنيه`;
     const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -237,7 +250,7 @@ export default function BookingModal({ court, startHour, date, onClose }: Props)
               <div>
                 <label className="text-xs md:text-sm text-muted-foreground">{t.court}</label>
                 <div className="mt-1 px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm">
-                  {court === 3 ? (lang === 'ar' ? 'ملعب خماسي كرة قدم' : 'Five-a-side Football') : court === 4 ? (lang === 'ar' ? 'ملعب بادل جديد' : 'New Padel Court') : `Court ${court}`}
+                  {courtName}
                 </div>
               </div>
 

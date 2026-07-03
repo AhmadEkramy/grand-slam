@@ -37,7 +37,7 @@ export default function AdminPage() {
   const { trainings, loading: trainingsLoading, addTrainingFirestore, updateTrainingFirestore, removeTrainingFirestore } = useFirestoreTrainings();
   const { championships, loading: champsLoading, addChampionshipFirestore, updateChampionshipFirestore, removeChampionshipFirestore } = useFirestoreChampionships();
   const { requests, loading: reqsLoading, updateRequestStatusFirestore, removeRequestFirestore } = useFirestoreChampionshipRequests();
-  const { courts, updateCourtVisibility } = useFirestoreCourts();
+  const { courts, updateCourtVisibility, updateCourtTitle } = useFirestoreCourts();
   const t = translations[lang].admin;
   const ct = translations[lang].court;
   const { appUser, loading } = useAuth();
@@ -54,6 +54,9 @@ export default function AdminPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [userDeleteConfirm, setUserDeleteConfirm] = useState<string | null>(null);
   const [suspensionConfirm, setSuspensionConfirm] = useState<{ uid: string; status: boolean } | null>(null);
+
+  const [editingCourtId, setEditingCourtId] = useState<number | null>(null);
+  const [courtTitleForm, setCourtTitleForm] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
 
   const [activeTab, setActiveTab] = useState<"reservations" | "analytics" | "users" | "reports" | "shop" | "sponsors" | "trainings" | "championships" | "championship_requests" | "courts">("reservations");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -335,6 +338,33 @@ export default function AdminPage() {
     } catch (err) {
       console.error("Failed to update badges:", err);
       return currentBadges;
+    }
+  };
+
+  const handleEditCourtTitle = (courtId: number) => {
+    const court = courts.find(c => c.id === courtId);
+    const defaultTitles = {
+      1: { en: "Court 1", ar: "ملعب 1" },
+      2: { en: "Court 2", ar: "ملعب 2" },
+      3: { en: "Five-a-side Football", ar: "ملعب خماسي كرة قدم" },
+      4: { en: "New Padel Court", ar: "ملعب بادل جديد" }
+    };
+    
+    setEditingCourtId(courtId);
+    setCourtTitleForm({
+      en: court?.customTitle?.en || defaultTitles[courtId as keyof typeof defaultTitles].en,
+      ar: court?.customTitle?.ar || defaultTitles[courtId as keyof typeof defaultTitles].ar
+    });
+  };
+
+  const handleSaveCourtTitle = async () => {
+    if (!editingCourtId || !courtTitleForm.en || !courtTitleForm.ar) return;
+    
+    try {
+      await updateCourtTitle(editingCourtId, courtTitleForm);
+      setEditingCourtId(null);
+    } catch (err) {
+      console.error("Failed to update court title:", err);
     }
   };
 
@@ -2008,7 +2038,8 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
+
+
       {/* Suspension Confirmation Modal */}
       {suspensionConfirm && (
         <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -2035,8 +2066,8 @@ export default function AdminPage() {
                 <button
                   onClick={confirmSuspension}
                   className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg ${suspensionConfirm.status
-                      ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20'
-                      : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20'
+                    : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
                     }`}
                 >
                   {lang === 'ar' ? (suspensionConfirm.status ? 'تفعيل' : 'حظر') : (suspensionConfirm.status ? 'Unblock' : 'Block')}
@@ -2053,16 +2084,25 @@ export default function AdminPage() {
             <MapPin className="w-6 h-6 text-slate-800 dark:text-white" />
             <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Courts Management</h2>
           </div>
-          
+
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <p className="text-muted-foreground mb-6">Show or hide courts from the main booking interface. This affects all users.</p>
-            
+            <p className="text-muted-foreground mb-6">Show or hide courts from the main booking interface and customize their titles. This affects all users.</p>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map(courtId => {
-                const courtName = courtId === 1 ? ct.court1 : courtId === 2 ? ct.court2 : courtId === 3 ? ct.court3 : ct.court4;
                 const courtStatus = courts.find(c => c.id === courtId);
                 const isVisible = courtStatus ? courtStatus.isVisible : true;
                 
+                // Get custom title or fall back to default translations
+                const getCourtName = () => {
+                  if (courtStatus?.customTitle?.[lang]) {
+                    return courtStatus.customTitle[lang];
+                  }
+                  return courtId === 1 ? ct.court1 : courtId === 2 ? ct.court2 : courtId === 3 ? ct.court3 : ct.court4;
+                };
+                
+                const courtName = getCourtName();
+
                 return (
                   <div key={courtId} className={`rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isVisible ? "border-accent/40 bg-accent/5" : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"}`}>
                     <div className={`p-4 flex items-center justify-between border-b ${isVisible ? "border-accent/20" : "border-slate-200 dark:border-slate-700"}`}>
@@ -2071,17 +2111,29 @@ export default function AdminPage() {
                         <MapPin className="w-5 h-5" />
                       </div>
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-4">
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${isVisible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
                           {isVisible ? "Visible" : "Hidden"}
                         </span>
                       </div>
+                      
+                      <button
+                        onClick={() => handleEditCourtTitle(courtId)}
+                        className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit Title
+                      </button>
+                      
                       <button
                         onClick={() => updateCourtVisibility(courtId, !isVisible)}
-                        className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isVisible 
-                          ? "bg-white dark:bg-slate-800 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" 
+                        className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isVisible
+                          ? "bg-white dark:bg-slate-800 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white"
                           : "bg-accent text-accent-foreground hover:glow-accent"}`}
                       >
                         {isVisible ? (
@@ -2100,6 +2152,67 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Court Title Modal */}
+      {editingCourtId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-heading text-2xl font-bold text-slate-900 dark:text-white">
+                Edit Court Title
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Customize the court name in both English and Arabic
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                  English Title
+                </label>
+                <input
+                  type="text"
+                  value={courtTitleForm.en}
+                  onChange={(e) => setCourtTitleForm({ ...courtTitleForm, en: e.target.value })}
+                  placeholder="Enter English title"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                  Arabic Title (العنوان بالعربية)
+                </label>
+                <input
+                  type="text"
+                  value={courtTitleForm.ar}
+                  onChange={(e) => setCourtTitleForm({ ...courtTitleForm, ar: e.target.value })}
+                  placeholder="أدخل العنوان بالعربية"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+              <button
+                onClick={() => setEditingCourtId(null)}
+                className="flex-1 px-6 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCourtTitle}
+                disabled={!courtTitleForm.en || !courtTitleForm.ar}
+                className="flex-1 px-6 py-3 rounded-xl font-bold bg-accent text-accent-foreground hover:glow-accent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

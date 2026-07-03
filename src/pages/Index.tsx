@@ -89,19 +89,19 @@ export default function Index() {
             const courtLabel = court === 1 ? ct.court1 : court === 2 ? ct.court2 : court === 3 ? ct.court3 : ct.court4;
             const courtBg = court === 3 ? "bg-emerald-600/80 border-emerald-400/30" : court === 4 ? "bg-amber-600/80 border-amber-400/30" : "bg-[hsl(215,100%,24%)]/80 border-white/20";
             return (
-            <div
-              key={court}
-              className={`w-44 h-32 md:w-56 md:h-36 rounded-xl ${courtBg} backdrop-blur-sm relative overflow-hidden shadow-lg border`}
-            >
-              {/* Court lines */}
-              <div className="absolute inset-3 border border-white/30 rounded-sm" />
-              <div className="absolute top-3 bottom-3 left-1/2 w-px bg-white/30" />
-              <div className="absolute top-1/2 left-3 right-3 h-px bg-white/20" />
-              {/* Label */}
-              <div className="absolute bottom-2 left-2 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
-                {courtLabel}
+              <div
+                key={court}
+                className={`w-44 h-32 md:w-56 md:h-36 rounded-xl ${courtBg} backdrop-blur-sm relative overflow-hidden shadow-lg border`}
+              >
+                {/* Court lines */}
+                <div className="absolute inset-3 border border-white/30 rounded-sm" />
+                <div className="absolute top-3 bottom-3 left-1/2 w-px bg-white/30" />
+                <div className="absolute top-1/2 left-3 right-3 h-px bg-white/20" />
+                {/* Label */}
+                <div className="absolute bottom-2 left-2 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                  {courtLabel}
+                </div>
               </div>
-            </div>
             );
           })}
         </div>

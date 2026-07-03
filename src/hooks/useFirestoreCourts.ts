@@ -11,6 +11,10 @@ import { db } from "@/lib/firebase";
 export interface CourtConfig {
     id: number;
     isVisible: boolean;
+    customTitle?: {
+        en?: string;
+        ar?: string;
+    };
 }
 
 export function useFirestoreCourts() {
@@ -35,10 +39,11 @@ export function useFirestoreCourts() {
                         const d = docSnap.data();
                         return {
                             id: Number(docSnap.id) || d.id,
-                            isVisible: d.isVisible ?? true
+                            isVisible: d.isVisible ?? true,
+                            customTitle: d.customTitle || {}
                         };
                     });
-                    
+
                     // Merge with defaults to ensure all courts exist
                     const mergedCourts = [1, 2, 3, 4].map(id => {
                         const existing = data.find(c => c.id === id);
@@ -66,10 +71,19 @@ export function useFirestoreCourts() {
         }, { merge: true });
     }
 
+    // Update court title in Firestore
+    async function updateCourtTitle(id: number, customTitle: { en?: string; ar?: string }) {
+        await setDoc(doc(db, "courts", id.toString()), {
+            id,
+            customTitle
+        }, { merge: true });
+    }
+
     return {
         courts,
         loading,
         error,
         updateCourtVisibility,
+        updateCourtTitle,
     };
 }
