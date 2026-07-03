@@ -6,7 +6,7 @@ export interface Booking {
   userId?: string;
   name: string;
   phone: string;
-  court: 1 | 2;
+  court: 1 | 2 | 3 | 4;
   type: "1h" | "2h" | "3h" | "vip";
   startHour: number;
   endHour: number;

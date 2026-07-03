@@ -586,7 +586,7 @@ export default function ProfilePage() {
                     <tbody>
                       {displayedBookings.map((b) => (
                         <tr key={b.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                          <td className="py-4 px-2 font-medium">Court {b.court}</td>
+                          <td className="py-4 px-2 font-medium">{b.court === 3 ? (lang === 'ar' ? 'ملعب خماسي كرة قدم' : 'Five-a-side Football') : b.court === 4 ? (lang === 'ar' ? 'ملعب بادل جديد' : 'New Padel Court') : `Court ${b.court}`}</td>
                           <td className="py-4 px-2 text-muted-foreground">{b.date}</td>
                           <td className="py-4 px-2 text-muted-foreground">{formatHour(b.startHour)} - {formatHour(b.endHour)}</td>
                           <td className="py-4 px-2 font-medium">{b.price} EGP</td>

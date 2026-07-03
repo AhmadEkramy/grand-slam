@@ -8,8 +8,9 @@ import { useFirestoreSponsors } from "@/hooks/useFirestoreSponsors";
 import { useFirestoreTrainings } from "@/hooks/useFirestoreTrainings";
 import { useFirestoreChampionships } from "@/hooks/useFirestoreChampionships";
 import { useFirestoreChampionshipRequests } from "@/hooks/useFirestoreChampionshipRequests";
+import { useFirestoreCourts } from "@/hooks/useFirestoreCourts";
 import { translations } from "@/lib/translations";
-import { DollarSign, CalendarCheck, Trophy, Package, Users, TrendingUp, Check, X, Trash2, ShieldAlert, Loader2, Search, Filter, Ban, BadgePercent, CheckCircle, Sparkles, HeartHandshake, Dumbbell } from "lucide-react";
+import { DollarSign, CalendarCheck, Trophy, Package, Users, TrendingUp, Check, X, Trash2, ShieldAlert, Loader2, Search, Filter, Ban, BadgePercent, CheckCircle, Sparkles, HeartHandshake, Dumbbell, MapPin, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { isThisWeek, isThisMonth, parseISO, subMonths, isSameMonth, startOfMonth, endOfMonth, format, subDays } from "date-fns";
 import { formatHour, formatLocalDate } from "@/lib/utils";
@@ -36,13 +37,16 @@ export default function AdminPage() {
   const { trainings, loading: trainingsLoading, addTrainingFirestore, updateTrainingFirestore, removeTrainingFirestore } = useFirestoreTrainings();
   const { championships, loading: champsLoading, addChampionshipFirestore, updateChampionshipFirestore, removeChampionshipFirestore } = useFirestoreChampionships();
   const { requests, loading: reqsLoading, updateRequestStatusFirestore, removeRequestFirestore } = useFirestoreChampionshipRequests();
+  const { courts, updateCourtVisibility } = useFirestoreCourts();
   const t = translations[lang].admin;
+  const ct = translations[lang].court;
   const { appUser, loading } = useAuth();
   const navigate = useNavigate();
 
   const [filterName, setFilterName] = useState("");
   const [filterDate, setFilterDate] = useState(formatLocalDate());
   const [filterCourt, setFilterCourt] = useState("all");
+  const [incomeFilterCourt, setIncomeFilterCourt] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedUserForBadge, setSelectedUserForBadge] = useState<any>(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -51,7 +55,7 @@ export default function AdminPage() {
   const [userDeleteConfirm, setUserDeleteConfirm] = useState<string | null>(null);
   const [suspensionConfirm, setSuspensionConfirm] = useState<{ uid: string; status: boolean } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"reservations" | "analytics" | "users" | "reports" | "shop" | "sponsors" | "trainings" | "championships" | "championship_requests">("reservations");
+  const [activeTab, setActiveTab] = useState<"reservations" | "analytics" | "users" | "reports" | "shop" | "sponsors" | "trainings" | "championships" | "championship_requests" | "courts">("reservations");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [productForm, setProductForm] = useState({ name: "", price: "", description: "", img: "" });
@@ -187,19 +191,37 @@ export default function AdminPage() {
   }
 
   const accepted = bookings.filter((b) => b.status === "accepted");
-  const totalRevenue = accepted.reduce((s, b) => s + b.price, 0);
+  const incomeAccepted = incomeFilterCourt === "all"
+    ? accepted
+    : accepted.filter((b) => b.court.toString() === incomeFilterCourt);
+
+  const totalRevenue = incomeAccepted.reduce((s, b) => s + b.price, 0);
 
   const todayStr = formatLocalDate();
-  const todayRevenue = accepted.filter((b) => b.date === todayStr).reduce((s, b) => s + b.price, 0);
-  const weekRevenue = accepted.filter((b) => b.date && isThisWeek(parseISO(b.date))).reduce((s, b) => s + b.price, 0);
-  const monthRevenue = accepted.filter((b) => b.date && isThisMonth(parseISO(b.date))).reduce((s, b) => s + b.price, 0);
+  const todayRevenue = incomeAccepted.filter((b) => b.date === todayStr).reduce((s, b) => s + b.price, 0);
+  const weekRevenue = incomeAccepted.filter((b) => b.date && isThisWeek(parseISO(b.date))).reduce((s, b) => s + b.price, 0);
+  const monthRevenue = incomeAccepted.filter((b) => b.date && isThisMonth(parseISO(b.date))).reduce((s, b) => s + b.price, 0);
 
-  const lastMonthDate = subMonths(new Date(), 1);
-  const lastMonthRevenue = accepted.filter((b) => b.date && isSameMonth(parseISO(b.date), lastMonthDate)).reduce((s, b) => s + b.price, 0);
+  const last3MonthsData = [2, 1, 0].map((monthsAgo) => {
+    const monthDate = subMonths(new Date(), monthsAgo);
+    const revenue = incomeAccepted
+      .filter((b) => b.date && isSameMonth(parseISO(b.date), monthDate))
+      .reduce((s, b) => s + b.price, 0);
+    return {
+      monthsAgo,
+      label: format(monthDate, "MMM yyyy"),
+      revenue,
+      isCurrent: monthsAgo === 0,
+    };
+  });
+  const max3MonthRevenue = Math.max(...last3MonthsData.map((m) => m.revenue), 1);
+  const previousMonthRevenue = last3MonthsData.find((m) => m.monthsAgo === 1)?.revenue ?? 0;
+
+  const incomeAcceptedBookingsCount = incomeAccepted.length;
 
   // Advanced Analytics Calculations
   const hourCounts: Record<number, number> = {};
-  accepted.forEach(b => {
+  incomeAccepted.forEach(b => {
     for (let h = b.startHour; h < b.endHour; h++) {
       hourCounts[h] = (hourCounts[h] || 0) + 1;
     }
@@ -209,7 +231,7 @@ export default function AdminPage() {
     .sort((a, b) => b.count - a.count);
 
   const customerStats: Record<string, { name: string, phone: string, totalSpend: number, count: number }> = {};
-  accepted.forEach(b => {
+  incomeAccepted.forEach(b => {
     const key = `${b.name}-${b.phone}`;
     if (!customerStats[key]) {
       customerStats[key] = { name: b.name, phone: b.phone, totalSpend: 0, count: 0 };
@@ -320,7 +342,7 @@ export default function AdminPage() {
     const data = bookings.map(b => ({
       'Customer': b.name,
       'Phone': b.phone,
-      'Court': `Court ${b.court}`,
+      'Court': b.court === 3 ? 'Five-a-side Football' : b.court === 4 ? 'New Padel Court' : `Court ${b.court}`,
       'Date': b.date,
       'Time': `${formatHour(b.startHour)} - ${formatHour(b.endHour)}`,
       'Price': b.price,
@@ -544,15 +566,47 @@ export default function AdminPage() {
                 )}
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab("courts")}
+              className={`flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-black transition-all duration-300 border-2 ${activeTab === "courts"
+                ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                : "bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400 hover:border-slate-200"
+                }`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === "courts" ? "bg-white/20" : "bg-white dark:bg-slate-800 shadow-sm"}`}>
+                <MapPin className="w-5 h-5" />
+              </div>
+              Courts Management
+            </button>
           </div>
         </div>
       </div>
 
       {activeTab === "analytics" && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-2 mb-8">
-            <TrendingUp className="w-6 h-6 text-slate-800 dark:text-white" />
-            <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">{t.income}</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-slate-800 dark:text-white" />
+              <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">{t.income}</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+              <label htmlFor="income-court-filter" className="text-sm font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                {t.filterByCourt}
+              </label>
+              <select
+                id="income-court-filter"
+                value={incomeFilterCourt}
+                onChange={(e) => setIncomeFilterCourt(e.target.value)}
+                className="min-w-[200px] px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:outline-none focus:border-accent text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm"
+              >
+                <option value="all">{t.allCourts}</option>
+                <option value="1">{ct.court1}</option>
+                <option value="2">{ct.court2}</option>
+                <option value="3">{ct.court3}</option>
+                <option value="4">{ct.court4}</option>
+              </select>
+            </div>
           </div>
 
           {/* Premium Income Cards */}
@@ -578,7 +632,7 @@ export default function AdminPage() {
           {/* Secondary Professional Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: t.totalBookings, value: bookings.length, color: "text-slate-900", icon: "🎾" },
+              { label: t.totalBookings, value: incomeFilterCourt === "all" ? bookings.length : incomeAcceptedBookingsCount, color: "text-slate-900", icon: "🎾" },
               { label: t.activeChamps, value: 0, color: "text-indigo-600", icon: "🏆" },
               { label: t.products, value: 0, color: "text-sky-600", icon: "🛍️" },
               { label: t.users, value: users.length, color: "text-emerald-600", icon: "👥" },
@@ -659,36 +713,45 @@ export default function AdminPage() {
                   <CalendarCheck className="w-6 h-6 text-purple-500" />
                   <h3 className="font-heading text-xl font-bold text-slate-800 dark:text-white tracking-tight">{t.revenueGrowth}</h3>
                 </div>
-                <div className="flex items-end justify-between gap-8 h-40 px-6">
-                  <div className="flex-1 flex flex-col items-center gap-4 group">
-                    <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl relative transition-all group-hover:bg-slate-100 dark:group-hover:bg-slate-800 overflow-hidden border border-slate-100 dark:border-slate-800" style={{ height: '70%' }}>
+                <div className="flex items-end justify-between gap-4 sm:gap-6 h-40 px-2 sm:px-6">
+                  <div className="flex-1 flex flex-col items-center gap-4 group min-w-0">
+                    <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl relative transition-all group-hover:bg-slate-100 dark:group-hover:bg-slate-800 overflow-hidden border border-slate-100 dark:border-slate-800" style={{ height: `${Math.max((last3MonthsData[0].revenue / max3MonthRevenue) * 100, last3MonthsData[0].revenue > 0 ? 12 : 4)}%` }}>
                       <div className="absolute inset-x-0 bottom-0 bg-slate-200 dark:bg-slate-700" style={{ height: '100%' }} />
                     </div>
-                    <div className="text-center">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.lastMonth}</p>
-                      <p className="text-sm font-black text-slate-600 dark:text-slate-400">{lastMonthRevenue} EGP</p>
+                    <div className="text-center w-full">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 truncate px-1">{last3MonthsData[0]?.label}</p>
+                      <p className="text-sm font-black text-slate-600 dark:text-slate-400 truncate px-1">{last3MonthsData[0]?.revenue ?? 0} EGP</p>
                     </div>
                   </div>
-                  <div className="flex-1 flex flex-col items-center gap-4 group">
-                    <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl relative transition-all group-hover:bg-purple-50 dark:group-hover:bg-purple-900/10 overflow-hidden border border-slate-100 dark:border-slate-800" style={{ height: '100%' }}>
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-purple-600 to-purple-400 shadow-lg shadow-purple-100 dark:shadow-purple-900/20" style={{ height: `${(monthRevenue / (Math.max(monthRevenue, lastMonthRevenue) || 1)) * 100}%` }} />
+                  <div className="flex-1 flex flex-col items-center gap-4 group min-w-0">
+                    <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl relative transition-all group-hover:bg-slate-100 dark:group-hover:bg-slate-800 overflow-hidden border border-slate-100 dark:border-slate-800" style={{ height: `${Math.max((last3MonthsData[1].revenue / max3MonthRevenue) * 100, last3MonthsData[1].revenue > 0 ? 12 : 4)}%` }}>
+                      <div className="absolute inset-x-0 bottom-0 bg-slate-200 dark:bg-slate-700" style={{ height: '100%' }} />
                     </div>
-                    <div className="text-center">
-                      <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest leading-none mb-1 text-glow-purple">{t.thisMonth}</p>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{monthRevenue} EGP</p>
+                    <div className="text-center w-full">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 truncate px-1">{last3MonthsData[1]?.label}</p>
+                      <p className="text-sm font-black text-slate-600 dark:text-slate-400 truncate px-1">{last3MonthsData[1]?.revenue ?? 0} EGP</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center gap-4 group min-w-0">
+                    <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl relative transition-all group-hover:bg-purple-50 dark:group-hover:bg-purple-900/10 overflow-hidden border border-slate-100 dark:border-slate-800" style={{ height: `${Math.max((last3MonthsData[2].revenue / max3MonthRevenue) * 100, last3MonthsData[2].revenue > 0 ? 12 : 4)}%` }}>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-purple-600 to-purple-400 shadow-lg shadow-purple-100 dark:shadow-purple-900/20" style={{ height: '100%' }} />
+                    </div>
+                    <div className="text-center w-full">
+                      <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest leading-none mb-1 truncate px-1">{t.thisMonth}</p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white truncate px-1">{last3MonthsData[2]?.revenue ?? 0} EGP</p>
                     </div>
                   </div>
                 </div>
                 <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.monthlyConversion}</p>
-                    <p className={`text-lg font-black ${monthRevenue >= lastMonthRevenue ? "text-emerald-500" : "text-rose-500"}`}>
-                      {lastMonthRevenue > 0 ? (((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1) : "100"}%
-                      {monthRevenue >= lastMonthRevenue ? " ↑" : " ↓"}
+                    <p className={`text-lg font-black ${monthRevenue >= previousMonthRevenue ? "text-emerald-500" : "text-rose-500"}`}>
+                      {previousMonthRevenue > 0 ? (((monthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100).toFixed(1) : "100"}%
+                      {monthRevenue >= previousMonthRevenue ? " ↑" : " ↓"}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-2xl ${monthRevenue >= lastMonthRevenue ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500" : "bg-rose-50 dark:bg-rose-900/30 text-rose-500"}`}>
-                    <TrendingUp className={`w-6 h-6 ${monthRevenue < lastMonthRevenue && "rotate-180"}`} />
+                  <div className={`p-3 rounded-2xl ${monthRevenue >= previousMonthRevenue ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500" : "bg-rose-50 dark:bg-rose-900/30 text-rose-500"}`}>
+                    <TrendingUp className={`w-6 h-6 ${monthRevenue < previousMonthRevenue && "rotate-180"}`} />
                   </div>
                 </div>
               </div>
@@ -734,6 +797,8 @@ export default function AdminPage() {
                   <option value="all">All Courts</option>
                   <option value="1">Court 1</option>
                   <option value="2">Court 2</option>
+                  <option value="3">Five-a-side Football</option>
+                  <option value="4">New Padel Court</option>
                 </select>
               </div>
               <div>
@@ -778,7 +843,7 @@ export default function AdminPage() {
                         <tr key={b.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                           <td className="py-4 font-bold text-slate-800 dark:text-white tracking-tight">{b.name}</td>
                           <td className="py-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">{b.phone}</td>
-                          <td className="py-4 font-black text-slate-700 dark:text-slate-300">Court {b.court}</td>
+                          <td className="py-4 font-black text-slate-700 dark:text-slate-300">{b.court === 3 ? 'Five-a-side Football' : b.court === 4 ? 'New Padel Court' : `Court ${b.court}`}</td>
                           <td className="py-4 text-slate-500 dark:text-slate-400 font-bold">{b.date}</td>
                           <td className="py-4 font-black text-slate-900 dark:text-white">{formatHour(b.startHour)} – {formatHour(b.endHour)}</td>
                           <td className="py-4 font-black text-emerald-600 dark:text-emerald-400">{b.price} EGP</td>
@@ -833,7 +898,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 gap-3 text-sm bg-white dark:bg-slate-800/80 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
                         <div>
                           <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-0.5">Court</p>
-                          <p className="font-bold text-slate-700 dark:text-slate-300">Court {b.court}</p>
+                          <p className="font-bold text-slate-700 dark:text-slate-300">{b.court === 3 ? 'Five-a-side Football' : b.court === 4 ? 'New Padel Court' : `Court ${b.court}`}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-0.5">Date</p>
@@ -1943,7 +2008,7 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
+
       {/* Suspension Confirmation Modal */}
       {suspensionConfirm && (
         <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -1981,7 +2046,65 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {activeTab === "courts" && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center gap-2 mb-8">
+            <MapPin className="w-6 h-6 text-slate-800 dark:text-white" />
+            <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Courts Management</h2>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800">
+            <p className="text-muted-foreground mb-6">Show or hide courts from the main booking interface. This affects all users.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map(courtId => {
+                const courtName = courtId === 1 ? ct.court1 : courtId === 2 ? ct.court2 : courtId === 3 ? ct.court3 : ct.court4;
+                const courtStatus = courts.find(c => c.id === courtId);
+                const isVisible = courtStatus ? courtStatus.isVisible : true;
+                
+                return (
+                  <div key={courtId} className={`rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isVisible ? "border-accent/40 bg-accent/5" : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"}`}>
+                    <div className={`p-4 flex items-center justify-between border-b ${isVisible ? "border-accent/20" : "border-slate-200 dark:border-slate-700"}`}>
+                      <h3 className="font-heading font-bold text-lg">{courtName}</h3>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isVisible ? "bg-accent/20 text-accent" : "bg-slate-200 dark:bg-slate-700 text-slate-500"}`}>
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${isVisible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                          {isVisible ? "Visible" : "Hidden"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => updateCourtVisibility(courtId, !isVisible)}
+                        className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isVisible 
+                          ? "bg-white dark:bg-slate-800 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" 
+                          : "bg-accent text-accent-foreground hover:glow-accent"}`}
+                      >
+                        {isVisible ? (
+                          <>
+                            <EyeOff className="w-4 h-4" />
+                            Hide Court
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Show Court
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-

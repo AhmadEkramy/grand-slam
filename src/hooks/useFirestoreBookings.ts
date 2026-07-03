@@ -31,7 +31,7 @@ export function useFirestoreBookings() {
                         userId: d.userId || "",
                         name: d.name || "",
                         phone: d.phone || "",
-                        court: d.court as 1 | 2,
+                        court: d.court as 1 | 2 | 3 | 4,
                         type: d.type as Booking["type"],
                         startHour: d.startHour,
                         endHour: d.endHour,

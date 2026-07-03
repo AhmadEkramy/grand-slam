@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStore } from "@/lib/store";
 import { translations } from "@/lib/translations";
+import { useFirestoreCourts } from "@/hooks/useFirestoreCourts";
 import CourtAvailability from "@/components/CourtAvailability";
 import BookingModal from "@/components/BookingModal";
 import Packages from "@/components/Packages";
@@ -17,9 +18,10 @@ export default function Index() {
   const ct = translations[lang].court;
   const navigate = useNavigate();
   const { appUser } = useAuth();
-  const [bookingState, setBookingState] = useState<{ court: 1 | 2; hour: number; date: string } | null>(null);
+  const { courts } = useFirestoreCourts();
+  const [bookingState, setBookingState] = useState<{ court: 1 | 2 | 3 | 4; hour: number; date: string } | null>(null);
 
-  const handleSelectSlot = (court: 1 | 2, hour: number, date: string) => {
+  const handleSelectSlot = (court: 1 | 2 | 3 | 4, hour: number, date: string) => {
     if (!appUser) {
       navigate("/login");
       return;
@@ -79,12 +81,17 @@ export default function Index() {
           </button>
         </div>
 
-        {/* Court illustrations at bottom */}
-        <div className="relative z-10 mt-16 flex gap-8 px-4">
-          {([1, 2] as const).map((court) => (
+        <div className="relative z-10 mt-16 flex gap-8 px-4 flex-wrap justify-center">
+          {([1, 2, 3, 4] as const).filter((court) => {
+            const courtStatus = courts.find(c => c.id === court);
+            return courtStatus ? courtStatus.isVisible : true;
+          }).map((court) => {
+            const courtLabel = court === 1 ? ct.court1 : court === 2 ? ct.court2 : court === 3 ? ct.court3 : ct.court4;
+            const courtBg = court === 3 ? "bg-emerald-600/80 border-emerald-400/30" : court === 4 ? "bg-amber-600/80 border-amber-400/30" : "bg-[hsl(215,100%,24%)]/80 border-white/20";
+            return (
             <div
               key={court}
-              className="w-44 h-32 md:w-56 md:h-36 rounded-xl bg-[hsl(215,100%,24%)]/80 border border-white/20 backdrop-blur-sm relative overflow-hidden shadow-lg"
+              className={`w-44 h-32 md:w-56 md:h-36 rounded-xl ${courtBg} backdrop-blur-sm relative overflow-hidden shadow-lg border`}
             >
               {/* Court lines */}
               <div className="absolute inset-3 border border-white/30 rounded-sm" />
@@ -92,10 +99,11 @@ export default function Index() {
               <div className="absolute top-1/2 left-3 right-3 h-px bg-white/20" />
               {/* Label */}
               <div className="absolute bottom-2 left-2 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
-                {court === 1 ? ct.court1 : ct.court2}
+                {courtLabel}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
