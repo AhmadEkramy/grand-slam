@@ -28,9 +28,13 @@ const courtConfig = {
 export default function CourtAvailability({ onSelectSlot }: Props) {
   const { lang } = useAppStore();
   const { bookings, loading: bookingsLoading } = useFirestoreBookings();
-  const { courts, loading: courtsLoading } = useFirestoreCourts();
+  const { courts, locations, loading: courtsLoading } = useFirestoreCourts();
   const loading = bookingsLoading || courtsLoading;
   const t = translations[lang].court;
+
+  const sahaLoc = locations?.find(l => l.id === "saha");
+  const dorayLoc = locations?.find(l => l.id === "doray_bay");
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const dateStr = formatLocalDate(selectedDate);
 
@@ -124,28 +128,29 @@ export default function CourtAvailability({ onSelectSlot }: Props) {
   };
 
   return (
-    <section className="py-16">
-      <div className="container mx-auto px-4">
-        <h2 className="font-heading text-3xl md:text-4xl font-bold text-center mb-3">
-          {t.title}
-        </h2>
-        <p className="text-center text-muted-foreground mb-6">
-          {format(selectedDate, "EEEE, MMMM d, yyyy")}
-        </p>
+    <section id="courts" className="py-20 relative overflow-hidden bg-background">
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div>
+            <span className="px-4 py-1.5 rounded-full text-xs font-semibold bg-accent/10 text-accent tracking-wider uppercase">
+              {t.title || "Court Availability"}
+            </span>
+            <h2 className="font-heading text-4xl md:text-5xl font-black mt-3 tracking-tight dark:text-white">
+              {lang === "en" ? "Book Padel Courts" : "حجز ملاعب البادل"}
+            </h2>
+          </div>
 
-        {/* Date Picker */}
-        <div className="flex justify-center mb-10">
           <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant="outline"
+                variant={"outline"}
                 className={cn(
-                  "w-[220px] justify-between text-left font-normal",
+                  "justify-start text-left font-normal h-12 px-4 rounded-xl border-border bg-card hover:bg-muted/50 transition-colors shadow-sm min-w-[240px]",
                   !selectedDate && "text-muted-foreground"
                 )}
               >
-                {format(selectedDate, "MM/dd/yyyy")}
-                <CalendarIcon className="h-4 w-4 opacity-50" />
+                <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -170,10 +175,30 @@ export default function CourtAvailability({ onSelectSlot }: Props) {
 
         {/* Courts */}
         {!loading && (
-          <div className="space-y-10">
-            <h3 className="font-heading text-2xl md:text-3xl font-bold text-center text-foreground">
-              {t.sahaCourts}
-            </h3>
+          <div className="space-y-12">
+            <div className="flex flex-col items-center text-center space-y-3 pb-2">
+              <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-black tracking-tight bg-gradient-to-r from-indigo-950 via-primary to-accent dark:from-indigo-200 dark:via-sky-400 dark:to-teal-300 bg-clip-text text-transparent py-1">
+                {sahaLoc?.title[lang] || t.sahaCourts}
+              </h3>
+              <div className="w-24 h-1 bg-gradient-to-r from-primary to-accent dark:from-sky-500 dark:to-teal-400 rounded-full shadow-[0_0_12px_rgba(25,186,134,0.4)] animate-pulse" />
+            </div>
+
+            {/* Saha Courts Location Banner */}
+            <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden relative shadow-lg group border border-border/50 bg-muted/10">
+              <img 
+                src={sahaLoc?.image || "/saha_court.png"} 
+                alt={sahaLoc?.title[lang] || t.sahaCourts} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
+                <span className="text-white font-heading text-xs md:text-sm font-bold bg-accent text-accent-foreground px-4 py-1.5 rounded-full w-fit shadow-md border border-accent/20">
+                  📍 {sahaLoc?.title[lang] || t.sahaLocation || "Saha Arena"}
+                </span>
+                <p className="text-white/80 text-xs md:text-sm mt-2 font-body max-w-xl">
+                  {sahaLoc?.description[lang] || t.sahaDescription || "Modern indoor facilities with world-class padel courts."}
+                </p>
+              </div>
+            </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               {([1, 2] as const).filter(cId => {
@@ -182,9 +207,29 @@ export default function CourtAvailability({ onSelectSlot }: Props) {
               }).map(renderCourtCard)}
             </div>
 
-            <h3 className="font-heading text-2xl md:text-3xl font-bold text-center text-foreground mt-12">
-              {t.rasElBarCourts}
-            </h3>
+            <div className="flex flex-col items-center text-center space-y-3 pt-4 pb-2">
+              <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-600 dark:from-emerald-400 dark:via-teal-300 dark:to-amber-400 bg-clip-text text-transparent py-1">
+                {dorayLoc?.title[lang] || t.rasElBarCourts}
+              </h3>
+              <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-amber-500 dark:from-emerald-400 dark:to-amber-400 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse" />
+            </div>
+
+            {/* Doray Bay Ras Elbar Courts Location Banner */}
+            <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden relative shadow-lg group border border-border/50 bg-muted/10">
+              <img 
+                src={dorayLoc?.image || "/doray_bay_court.png"} 
+                alt={dorayLoc?.title[lang] || t.rasElBarCourts} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
+                <span className="text-white font-heading text-xs md:text-sm font-bold bg-amber-500 text-white px-4 py-1.5 rounded-full w-fit shadow-md border border-amber-400/20">
+                  📍 {dorayLoc?.title[lang] || t.rasLocation || "Doray Bay"}
+                </span>
+                <p className="text-white/80 text-xs md:text-sm mt-2 font-body max-w-xl">
+                  {dorayLoc?.description[lang] || t.rasDescription || "Premium outdoor courts with refreshing sea breeze."}
+                </p>
+              </div>
+            </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               {([3, 4] as const).filter(cId => {

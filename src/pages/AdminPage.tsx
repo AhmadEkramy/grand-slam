@@ -37,7 +37,7 @@ export default function AdminPage() {
   const { trainings, loading: trainingsLoading, addTrainingFirestore, updateTrainingFirestore, removeTrainingFirestore } = useFirestoreTrainings();
   const { championships, loading: champsLoading, addChampionshipFirestore, updateChampionshipFirestore, removeChampionshipFirestore } = useFirestoreChampionships();
   const { requests, loading: reqsLoading, updateRequestStatusFirestore, removeRequestFirestore } = useFirestoreChampionshipRequests();
-  const { courts, updateCourtVisibility, updateCourtTitle } = useFirestoreCourts();
+  const { courts, locations, updateCourtVisibility, updateCourtTitle, updateLocation } = useFirestoreCourts();
   const t = translations[lang].admin;
   const ct = translations[lang].court;
   const { appUser, loading } = useAuth();
@@ -57,6 +57,15 @@ export default function AdminPage() {
 
   const [editingCourtId, setEditingCourtId] = useState<number | null>(null);
   const [courtTitleForm, setCourtTitleForm] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
+
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [locationForm, setLocationForm] = useState({
+    titleEn: "",
+    titleAr: "",
+    image: "",
+    descEn: "",
+    descAr: ""
+  });
 
   const [activeTab, setActiveTab] = useState<"reservations" | "analytics" | "users" | "reports" | "shop" | "sponsors" | "trainings" | "championships" | "championship_requests" | "courts">("reservations");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -365,6 +374,39 @@ export default function AdminPage() {
       setEditingCourtId(null);
     } catch (err) {
       console.error("Failed to update court title:", err);
+    }
+  };
+
+  const handleEditLocation = (locationId: string) => {
+    const loc = locations?.find(l => l.id === locationId);
+    if (!loc) return;
+    setEditingLocationId(locationId);
+    setLocationForm({
+      titleEn: loc.title.en,
+      titleAr: loc.title.ar,
+      image: loc.image,
+      descEn: loc.description.en,
+      descAr: loc.description.ar
+    });
+  };
+
+  const handleSaveLocation = async () => {
+    if (!editingLocationId) return;
+    try {
+      await updateLocation(editingLocationId, {
+        title: {
+          en: locationForm.titleEn,
+          ar: locationForm.titleAr
+        },
+        image: locationForm.image,
+        description: {
+          en: locationForm.descEn,
+          ar: locationForm.descAr
+        }
+      });
+      setEditingLocationId(null);
+    } catch (err) {
+      console.error("Failed to update location:", err);
     }
   };
 
@@ -2079,79 +2121,153 @@ export default function AdminPage() {
       )}
 
       {activeTab === "courts" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-2 mb-8">
-            <MapPin className="w-6 h-6 text-slate-800 dark:text-white" />
-            <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Courts Management</h2>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <p className="text-muted-foreground mb-6">Show or hide courts from the main booking interface and customize their titles. This affects all users.</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map(courtId => {
-                const courtStatus = courts.find(c => c.id === courtId);
-                const isVisible = courtStatus ? courtStatus.isVisible : true;
-                
-                // Get custom title or fall back to default translations
-                const getCourtName = () => {
-                  if (courtStatus?.customTitle?.[lang]) {
-                    return courtStatus.customTitle[lang];
-                  }
-                  return courtId === 1 ? ct.court1 : courtId === 2 ? ct.court2 : courtId === 3 ? ct.court3 : ct.court4;
-                };
-                
-                const courtName = getCourtName();
-
-                return (
-                  <div key={courtId} className={`rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isVisible ? "border-accent/40 bg-accent/5" : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"}`}>
-                    <div className={`p-4 flex items-center justify-between border-b ${isVisible ? "border-accent/20" : "border-slate-200 dark:border-slate-700"}`}>
-                      <h3 className="font-heading font-bold text-lg">{courtName}</h3>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isVisible ? "bg-accent/20 text-accent" : "bg-slate-200 dark:bg-slate-700 text-slate-500"}`}>
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${isVisible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
-                          {isVisible ? "Visible" : "Hidden"}
-                        </span>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12">
+          {/* Locations Management */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <MapPin className="w-6 h-6 text-slate-800 dark:text-white" />
+              <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Locations Management</h2>
+            </div>
+            
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800">
+              <p className="text-muted-foreground mb-6 text-sm">Customize the titles, descriptions, and banner images of the court locations displayed on the landing page.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {locations?.map((loc) => (
+                  <div key={loc.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-800/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+                    <div>
+                      {/* Image Preview */}
+                      <div className="h-40 relative bg-muted overflow-hidden border-b border-slate-200 dark:border-slate-800">
+                        <img 
+                          src={loc.image} 
+                          alt={loc.title[lang]} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = loc.id === "saha" ? "/saha_court.png" : "/doray_bay_court.png";
+                          }}
+                        />
+                        <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+                          {loc.id}
+                        </div>
                       </div>
                       
+                      {/* Details */}
+                      <div className="p-5 space-y-4">
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Titles</p>
+                          <div className="space-y-1">
+                            <p className="text-sm"><strong className="text-slate-500 font-medium">EN:</strong> <span className="dark:text-white font-bold">{loc.title.en}</span></p>
+                            <p className="text-sm"><strong className="text-slate-500 font-medium">AR:</strong> <span className="dark:text-white font-bold" dir="rtl">{loc.title.ar}</span></p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Descriptions</p>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground"><strong className="text-slate-500 font-medium">EN:</strong> {loc.description.en}</p>
+                            <p className="text-xs text-muted-foreground" dir="rtl"><strong className="text-slate-500 font-medium">AR:</strong> {loc.description.ar}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Image Link</p>
+                          <p className="text-xs text-accent font-semibold truncate" title={loc.image}>{loc.image}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 pt-0">
                       <button
-                        onClick={() => handleEditCourtTitle(courtId)}
+                        onClick={() => handleEditLocation(loc.id)}
                         className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                        Edit Title
-                      </button>
-                      
-                      <button
-                        onClick={() => updateCourtVisibility(courtId, !isVisible)}
-                        className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isVisible
-                          ? "bg-white dark:bg-slate-800 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white"
-                          : "bg-accent text-accent-foreground hover:glow-accent"}`}
-                      >
-                        {isVisible ? (
-                          <>
-                            <EyeOff className="w-4 h-4" />
-                            Hide Court
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4" />
-                            Show Court
-                          </>
-                        )}
+                        Edit Location Details
                       </button>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Courts Visibility & Names */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <MapPin className="w-6 h-6 text-slate-800 dark:text-white" />
+              <h2 className="font-heading text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Courts Visibility & Names</h2>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800">
+              <p className="text-muted-foreground mb-6 text-sm">Show or hide courts from the main booking interface and customize their titles. This affects all users.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(courtId => {
+                  const courtStatus = courts.find(c => c.id === courtId);
+                  const isVisible = courtStatus ? courtStatus.isVisible : true;
+                  
+                  const getCourtName = () => {
+                    if (courtStatus?.customTitle?.[lang]) {
+                      return courtStatus.customTitle[lang];
+                    }
+                    return courtId === 1 ? ct.court1 : courtId === 2 ? ct.court2 : courtId === 3 ? ct.court3 : courtId === 4 ? ct.court4 : `Court ${courtId}`;
+                  };
+                  
+                  const courtName = getCourtName();
+
+                  return (
+                    <div key={courtId} className={`rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isVisible ? "border-accent/40 bg-accent/5" : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"}`}>
+                      <div className={`p-4 flex items-center justify-between border-b ${isVisible ? "border-accent/20" : "border-slate-200 dark:border-slate-700"}`}>
+                        <h3 className="font-heading font-bold text-lg">{courtName}</h3>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isVisible ? "bg-accent/20 text-accent" : "bg-slate-200 dark:bg-slate-700 text-slate-500"}`}>
+                          <MapPin className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${isVisible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                            {isVisible ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+                        
+                        <button
+                          onClick={() => handleEditCourtTitle(courtId)}
+                          className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          Edit Title
+                        </button>
+                        
+                        <button
+                          onClick={() => updateCourtVisibility(courtId, !isVisible)}
+                          className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isVisible
+                            ? "bg-white dark:bg-slate-800 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white"
+                            : "bg-accent text-accent-foreground hover:glow-accent"}`}
+                        >
+                          {isVisible ? (
+                            <>
+                              <EyeOff className="w-4 h-4" />
+                              Hide Court
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-4 h-4" />
+                              Show Court
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -2209,6 +2325,109 @@ export default function AdminPage() {
               <button
                 onClick={handleSaveCourtTitle}
                 disabled={!courtTitleForm.en || !courtTitleForm.ar}
+                className="flex-1 px-6 py-3 rounded-xl font-bold bg-accent text-accent-foreground hover:glow-accent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Location Modal */}
+      {editingLocationId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-heading text-2xl font-bold text-slate-900 dark:text-white">
+                Edit Location Details
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Customize titles, descriptions, and image link for {editingLocationId}
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                    English Title
+                  </label>
+                  <input
+                    type="text"
+                    value={locationForm.titleEn}
+                    onChange={(e) => setLocationForm({ ...locationForm, titleEn: e.target.value })}
+                    placeholder="Enter English title"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                    Arabic Title (العنوان بالعربية)
+                  </label>
+                  <input
+                    type="text"
+                    value={locationForm.titleAr}
+                    onChange={(e) => setLocationForm({ ...locationForm, titleAr: e.target.value })}
+                    placeholder="العنوان بالعربية"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white text-sm"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                  Image URL / Link
+                </label>
+                <input
+                  type="text"
+                  value={locationForm.image}
+                  onChange={(e) => setLocationForm({ ...locationForm, image: e.target.value })}
+                  placeholder="e.g. /saha_court.png or https://example.com/image.jpg"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                  English Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={locationForm.descEn}
+                  onChange={(e) => setLocationForm({ ...locationForm, descEn: e.target.value })}
+                  placeholder="Enter English description"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white text-sm resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                  Arabic Description (الوصف بالعربية)
+                </label>
+                <textarea
+                  rows={3}
+                  value={locationForm.descAr}
+                  onChange={(e) => setLocationForm({ ...locationForm, descAr: e.target.value })}
+                  placeholder="الوصف بالعربية"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-accent text-slate-900 dark:text-white text-sm resize-none"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+              <button
+                onClick={() => setEditingLocationId(null)}
+                className="flex-1 px-6 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveLocation}
+                disabled={!locationForm.titleEn || !locationForm.titleAr || !locationForm.image}
                 className="flex-1 px-6 py-3 rounded-xl font-bold bg-accent text-accent-foreground hover:glow-accent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save Changes
